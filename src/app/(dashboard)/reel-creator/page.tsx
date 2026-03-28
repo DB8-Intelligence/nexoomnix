@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { Film, Link2, FileText, Sparkles, Copy, Check, RefreshCw, ToggleLeft, ToggleRight, ChevronDown, ImageIcon, Download, Loader2, Zap, Mic, Volume2, Play, Square } from 'lucide-react'
+import { Film, Link2, FileText, Sparkles, Copy, Check, RefreshCw, ToggleLeft, ToggleRight, ChevronDown, ImageIcon, Download, Loader2, Zap, Mic, Volume2, Play, Square, Video, Wand2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 // ─── Types ───────────────────────────────────────────────────
@@ -274,7 +274,7 @@ function parseVoiceScript(output: string): string {
     .trim()
 }
 
-function VoicePanel({ output }: { output: string }) {
+function VoicePanel({ output, onAudioReady }: { output: string; onAudioReady?: (url: string) => void }) {
   const script = useMemo(() => parseVoiceScript(output), [output])
   const [voice, setVoice] = useState<TTSVoice>('nova')
   const [loading, setLoading] = useState(false)
@@ -301,6 +301,7 @@ function VoicePanel({ output }: { output: string }) {
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       setAudioUrl(url)
+      onAudioReady?.(url)
     } catch {
       setError('Falha na conexão')
     } finally {
@@ -404,6 +405,177 @@ function VoicePanel({ output }: { output: string }) {
   )
 }
 
+// ─── Lip-sync panel ──────────────────────────────────────────
+
+const LIPSYNC_STATUS_LABELS: Record<string, string> = {
+  starting:   'Iniciando...',
+  processing: 'Animando...',
+  succeeded:  'Concluído ✓',
+  failed:     'Falhou',
+}
+
+async function blobUrlToDataUri(blobUrl: string): Promise<string> {
+  const res = await fetch(blobUrl)
+  const blob = await res.blob()
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
+}
+
+function LipSyncPanel({ audioBlobUrl }: { audioBlobUrl: string | null }) {
+  const [imageUrl, setImageUrl] = useState('')
+  const [predictionId, setPredictionId] = useState<string | null>(null)
+  const [status, setStatus] = useState('')
+  const [videoUrl, setVideoUrl] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const mountedRef = useRef(true)
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => { mountedRef.current = false }
+  }, [])
+
+  async function pollPrediction(id: string) {
+    if (!mountedRef.current) return
+    try {
+      const res = await fetch(`/api/reel-creator/generate-lipsync?id=${id}`)
+      const data = await res.json() as { status: string; videoUrl?: string; error?: string }
+      if (!mountedRef.current) return
+      setStatus(data.status)
+      if (data.status === 'succeeded' && data.videoUrl) {
+        setVideoUrl(data.videoUrl)
+        setLoading(false)
+      } else if (data.status === 'failed') {
+        setError(data.error ?? 'Falhou no processamento')
+        setLoading(false)
+      } else {
+        setTimeout(() => pollPrediction(id), 3000)
+      }
+    } catch {
+      if (mountedRef.current) { setError('Falha ao verificar status'); setLoading(false) }
+    }
+  }
+
+  async function generate() {
+    if (!audioBlobUrl || !imageUrl.trim()) return
+    setLoading(true)
+    setError(null)
+    setVideoUrl(null)
+    setPredictionId(null)
+    setStatus('Preparando...')
+
+    try {
+      const audioDataUri = await blobUrlToDataUri(audioBlobUrl)
+      const res = await fetch('/api/reel-creator/generate-lipsync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: imageUrl.trim(), audioDataUri }),
+      })
+      const data = await res.json() as {
+        predictionId?: string
+        status?: string
+        videoUrl?: string
+        error?: string
+      }
+      if (data.error) { setError(data.error); setLoading(false); return }
+      if (data.videoUrl) { setVideoUrl(data.videoUrl); setStatus('succeeded'); setLoading(false); return }
+      if (data.predictionId) {
+        setPredictionId(data.predictionId)
+        setStatus(data.status ?? 'starting')
+        setTimeout(() => pollPrediction(data.predictionId!), 3000)
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erro')
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+      <div className="flex items-center px-4 py-3 border-b border-gray-50">
+        <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+          <Video className="w-4 h-4 text-gray-400" />
+          🎭 Lip-sync do Objeto Falante
+          <span className="text-xs font-normal text-gray-400">(~$0.015 · Replicate SadTalker)</span>
+        </p>
+      </div>
+
+      <div className="p-4 space-y-3">
+        {/* Image URL input */}
+        <div>
+          <label className="text-xs text-gray-500 block mb-1.5">
+            URL da imagem gerada (copie o link de uma imagem acima)
+          </label>
+          <input
+            type="text"
+            value={imageUrl}
+            onChange={e => setImageUrl(e.target.value)}
+            placeholder="https://v3.fal.media/files/..."
+            className="w-full text-xs border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-200 placeholder-gray-300"
+          />
+        </div>
+
+        {/* Audio status indicator */}
+        <div className={`flex items-center gap-2 text-xs rounded-xl px-3 py-2 ${
+          audioBlobUrl ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-gray-50 text-gray-500'
+        }`}>
+          <Mic className="w-3.5 h-3.5 flex-shrink-0" />
+          {audioBlobUrl
+            ? 'Narração pronta ✓ — será sincronizada com a imagem'
+            : 'Gere a narração primeiro no painel acima'}
+        </div>
+
+        {/* Generate button */}
+        <button
+          type="button"
+          onClick={generate}
+          disabled={loading || !audioBlobUrl || !imageUrl.trim()}
+          className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white text-xs font-semibold rounded-xl hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {loading
+            ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {LIPSYNC_STATUS_LABELS[status] ?? 'Processando...'}</>
+            : <><Wand2 className="w-3.5 h-3.5" /> Gerar Lip-sync</>
+          }
+        </button>
+
+        {predictionId && loading && (
+          <p className="text-[10px] text-gray-400">ID: {predictionId} · verificando a cada 3s...</p>
+        )}
+
+        {error && <p className="text-xs text-red-500">{error}</p>}
+
+        {/* Video result */}
+        {videoUrl && (
+          <div className="space-y-2">
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            <video
+              src={videoUrl}
+              controls
+              playsInline
+              className="w-full max-w-[180px] mx-auto rounded-xl aspect-[9/16] object-cover border border-gray-200"
+            />
+            <div className="flex justify-center">
+              <a
+                href={videoUrl}
+                download="talking-object.mp4"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 border border-orange-200 text-orange-700 text-xs rounded-lg hover:bg-orange-100 transition-colors"
+              >
+                <Download className="w-3 h-3" /> Baixar Vídeo MP4
+              </a>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Page ────────────────────────────────────────────────────
 export default function ReelCreatorPage() {
   const supabase = createClient()
@@ -438,6 +610,7 @@ export default function ReelCreatorPage() {
   const [generating, setGenerating] = useState(false)
   const [output, setOutput] = useState('')
   const [done, setDone] = useState(false)
+  const [ttsAudioBlobUrl, setTtsAudioBlobUrl] = useState<string | null>(null)
   const outputRef = useRef<HTMLDivElement>(null)
 
   const sections = done ? splitSections(output) : []
@@ -677,7 +850,8 @@ export default function ReelCreatorPage() {
             <CopyBtn text={output} />
           </div>
           <SceneImagePanel output={output} />
-          <VoicePanel output={output} />
+          <VoicePanel output={output} onAudioReady={setTtsAudioBlobUrl} />
+          <LipSyncPanel audioBlobUrl={ttsAudioBlobUrl} />
           {sections.map(s => (
             <SectionCard key={s.title} title={s.title} body={s.body} />
           ))}
