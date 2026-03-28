@@ -817,9 +817,16 @@ function VideoAssemblyPanel({
 interface CharacterConcept {
   id: string
   name: string
+  style?: 'fotorrealista' | 'miniatura-acao' | 'pixar-3d'
   personality: string
   colorPalette: string
   prompt: string
+}
+
+const STYLE_LABELS: Record<string, { label: string; color: string }> = {
+  'fotorrealista':  { label: '📸 Fotorrealista', color: 'bg-amber-50 text-amber-700 border-amber-200' },
+  'miniatura-acao': { label: '💪 Miniatura Ação', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  'pixar-3d':       { label: '✨ Pixar 3D',       color: 'bg-purple-50 text-purple-700 border-purple-200' },
 }
 
 interface CharacterAnalysis {
@@ -1037,6 +1044,11 @@ function PhotoObjectMode({
 
             {/* Concept info */}
             <div className="text-center px-0.5">
+              {char.concept.style && STYLE_LABELS[char.concept.style] && (
+                <span className={`inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded-full border mb-1 ${STYLE_LABELS[char.concept.style].color}`}>
+                  {STYLE_LABELS[char.concept.style].label}
+                </span>
+              )}
               <p className="text-[11px] font-bold text-gray-800 truncate">{char.concept.name}</p>
               <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-2 leading-tight">{char.concept.personality}</p>
               <p className="text-[10px] text-purple-500 font-medium mt-0.5">{char.concept.colorPalette}</p>

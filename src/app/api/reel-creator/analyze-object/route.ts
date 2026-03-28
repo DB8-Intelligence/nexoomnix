@@ -10,6 +10,7 @@ type AllowedType = typeof ALLOWED_TYPES[number]
 interface CharacterConcept {
   id: string
   name: string
+  style: 'fotorrealista' | 'miniatura-acao' | 'pixar-3d'
   personality: string
   colorPalette: string
   prompt: string
@@ -57,9 +58,14 @@ export async function POST(req: NextRequest) {
           },
           {
             type: 'text',
-            text: `Analise esta imagem de um objeto/produto e crie 3 conceitos únicos de personagem Pixar/Disney 3D animado. ${nicheContext}
+            text: `Analise esta imagem de um objeto/produto e crie 3 conceitos de personagem para reels virais do Instagram, cada um em um ESTILO DIFERENTE. ${nicheContext}
 
-Cada conceito deve ter personalidade distinta. Responda SOMENTE com JSON válido, sem markdown nem texto extra:
+ESTILOS DISPONÍVEIS (baseados nos reels de maior engajamento):
+- ESTILO A "Fotorrealista + Face Expressiva": objeto mantém textura real, face cartoon embutida na superfície, olhos salientes realistas, boca aberta com dentes visíveis, expressão extremamente exagerada. Colocado em ambiente real (foto).
+- ESTILO B "Miniatura de Ação": objeto vira uma miniatura muscular/estilizada como action figure, textura plástica/borracha, pose dinâmica, em close em superfície real.
+- ESTILO C "Pixar/Disney 3D": personagem totalmente renderizado estilo animação, corpo com braços e pernas, ambiente 3D renderizado.
+
+Responda SOMENTE com JSON válido, sem markdown nem texto extra:
 
 {
   "object": "nome do objeto em português",
@@ -68,12 +74,27 @@ Cada conceito deve ter personalidade distinta. Responda SOMENTE com JSON válido
     {
       "id": "A",
       "name": "Nome do Personagem",
-      "personality": "Descrição da personalidade em 1 frase (português)",
-      "colorPalette": "Cores dominantes ex: prata + azul elétrico",
-      "prompt": "photorealistic Pixar Disney 3D animated [OBJECT_NAME] character with expressive face, [PERSONALITY: friendly/energetic/sophisticated], [COLOR_PALETTE], big round eyes, lip-sync ready open mouth, clean gradient background, soft rim lighting, subsurface scattering, 8K render, 9:16 vertical aspect ratio"
+      "style": "fotorrealista",
+      "personality": "Descrição da personalidade em 1 frase em português — inclua a expressão dominante (ex: raivoso, chocado, determinado)",
+      "colorPalette": "Cores dominantes do objeto ex: couro marrom + dourado",
+      "prompt": "photorealistic [OBJECT_NAME] with an expressive cartoon face deeply embedded in its natural [MATERIAL] surface, [EXPRESSION: extremely angry/shocked/determined] expression, large bulging realistic eyes, thick dramatic eyebrows, wide open mouth with visible teeth, natural object texture preserved, placed in a real [RELEVANT ENVIRONMENT], cinematic lighting, ultra-detailed, 8K, 9:16 vertical"
     },
-    { "id": "B", ... },
-    { "id": "C", ... }
+    {
+      "id": "B",
+      "name": "Nome do Personagem",
+      "style": "miniatura-acao",
+      "personality": "Descrição da personalidade em 1 frase em português",
+      "colorPalette": "Cores do objeto",
+      "prompt": "hyperrealistic miniature [OBJECT_NAME] character as a muscular action figure, [COLOR] plastic and rubber texture, intense [EXPRESSION] expression, dynamic action pose performing [RELEVANT ACTION], placed on a real [SURFACE] surface, macro photography, shallow depth of field, dramatic lighting, photorealistic background, 8K, 9:16 vertical"
+    },
+    {
+      "id": "C",
+      "name": "Nome do Personagem",
+      "style": "pixar-3d",
+      "personality": "Descrição da personalidade em 1 frase em português",
+      "colorPalette": "Cores do objeto",
+      "prompt": "Pixar Disney 3D animated [OBJECT_NAME] character with expressive face, articulated arms and legs, [PERSONALITY] personality, [COLOR_PALETTE], big round eyes, lip-sync ready mouth, rendered [ENVIRONMENT] background, warm cinematic lighting, Pixar render quality, 8K, 9:16 vertical"
+    }
   ]
 }`,
           },
