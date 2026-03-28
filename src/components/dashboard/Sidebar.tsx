@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import {
   Zap, Calendar, Users, DollarSign, BarChart3, FileText,
   Share2, Globe, Bot, Bell, Settings, X, ChevronRight,
-  ClipboardList, Home, BookOpen, Package, Sparkles, CreditCard, PieChart
+  ClipboardList, Home, BookOpen, Package, Sparkles, CreditCard, PieChart, Film
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getNicheConfig } from '@/lib/niche-config'
@@ -65,6 +65,7 @@ function getNavItems(tenant: Tenant): NavItem[] {
     { href: '/relatorios', label: 'Relatórios', icon: <PieChart className="w-4 h-4" />, requiredModule: 'contabilidade', badge: 'Pro+' },
     { href: '/contabilidade', label: 'Contabilidade', icon: <BarChart3 className="w-4 h-4" />, requiredModule: 'contabilidade', badge: 'Pro+' },
     { href: '/conteudo', label: 'ContentAI', icon: <Sparkles className="w-4 h-4" />, requiredModule: 'content_ai', badge: 'Pro' },
+    { href: '/reel-creator', label: 'ReelCreator AI', icon: <Film className="w-4 h-4" />, requiredModule: 'content_ai', badge: 'Pro' },
     { href: '/redes-sociais', label: 'Redes Sociais IA', icon: <Share2 className="w-4 h-4" />, requiredModule: 'social', badge: 'Pro' },
     { href: '/site-publico', label: 'Site Público', icon: <Globe className="w-4 h-4" />, requiredModule: 'site', badge: 'Pro' },
     { href: '/ia-contador', label: 'IA Contador', icon: <Bot className="w-4 h-4" />, requiredModule: 'ia_contador', badge: 'Enterprise' },
