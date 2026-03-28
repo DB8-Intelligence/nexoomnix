@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js
+.next/
+out/
+build/
+
+# Environment variables — NUNCA commitar
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Supabase local
+supabase/.branches
+supabase/.temp
+
+# Vercel
+.vercel
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+*.pem
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/settings.json
+
+# ─── SKILLS: as .md dentro de .claude/ são commitadas (são instruções do projeto)
+# As .skill (empacotadas) também são commitadas para distribuição
+# NADA é ignorado nas skills — tudo deve ser versionado
