@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
+    "@ffmpeg/ffmpeg": "^0.12.10",
+    "@ffmpeg/util": "^0.12.1",
     "@supabase/ssr": "^0.5.1",
     "@supabase/supabase-js": "^2.44.4",
     "@vercel/analytics": "^2.0.1",

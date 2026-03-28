@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { Film, Link2, FileText, Sparkles, Copy, Check, RefreshCw, ToggleLeft, ToggleRight, ChevronDown, ImageIcon, Download, Loader2, Zap, Mic, Volume2, Play, Square, Video, Wand2 } from 'lucide-react'
+import { Film, Link2, FileText, Sparkles, Copy, Check, RefreshCw, ToggleLeft, ToggleRight, ChevronDown, ImageIcon, Download, Loader2, Zap, Mic, Volume2, Play, Square, Video, Wand2, Clapperboard, BarChart2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 // ─── Types ───────────────────────────────────────────────────
@@ -126,7 +126,7 @@ function parseScenePrompts(output: string): string[] {
 
 interface SceneImg { url: string | null; loading: boolean; error: string | null }
 
-function SceneImagePanel({ output }: { output: string }) {
+function SceneImagePanel({ output, onImagesUpdate }: { output: string; onImagesUpdate?: (urls: (string | null)[]) => void }) {
   const prompts = useMemo(() => parseScenePrompts(output), [output])
   const [imgs, setImgs] = useState<SceneImg[]>([])
   const [genAll, setGenAll] = useState(false)
@@ -134,6 +134,11 @@ function SceneImagePanel({ output }: { output: string }) {
   useEffect(() => {
     setImgs(prompts.map(() => ({ url: null, loading: false, error: null })))
   }, [prompts])
+
+  useEffect(() => {
+    onImagesUpdate?.(imgs.map(img => img.url))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [imgs])
 
   async function generateOne(idx: number) {
     setImgs(prev => prev.map((s, i) => i === idx ? { ...s, loading: true, error: null } : s))
@@ -567,6 +572,228 @@ function LipSyncPanel({ audioBlobUrl }: { audioBlobUrl: string | null }) {
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 border border-orange-200 text-orange-700 text-xs rounded-lg hover:bg-orange-100 transition-colors"
               >
                 <Download className="w-3 h-3" /> Baixar Vídeo MP4
+              </a>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Video assembly panel (FFmpeg.wasm) ──────────────────────
+
+interface FFmpegInstance {
+  load: (opts: { coreURL: string; wasmURL: string }) => Promise<void>
+  writeFile: (name: string, data: Uint8Array) => Promise<void>
+  readFile: (name: string) => Promise<Uint8Array>
+  deleteFile: (name: string) => Promise<void>
+  exec: (args: string[]) => Promise<number>
+  on: (event: string, cb: (data: { progress: number }) => void) => void
+  off: (event: string, cb: (data: { progress: number }) => void) => void
+}
+
+async function loadFFmpegLib(): Promise<{
+  ffmpeg: FFmpegInstance
+  fetchFile: (src: string | Blob | File) => Promise<Uint8Array>
+  toBlobURL: (url: string, mimeType: string) => Promise<string>
+}> {
+  const [{ FFmpeg }, { fetchFile, toBlobURL }] = await Promise.all([
+    import('@ffmpeg/ffmpeg'),
+    import('@ffmpeg/util'),
+  ])
+  const ffmpeg = new FFmpeg() as unknown as FFmpegInstance
+  const BASE = 'https://unpkg.com/@ffmpeg/core-st@0.12.9/dist/umd'
+  await ffmpeg.load({
+    coreURL: await toBlobURL(`${BASE}/ffmpeg-core.js`, 'text/javascript'),
+    wasmURL: await toBlobURL(`${BASE}/ffmpeg-core.wasm`, 'application/wasm'),
+  })
+  return { ffmpeg, fetchFile, toBlobURL }
+}
+
+function VideoAssemblyPanel({
+  imageUrls,
+  audioBlobUrl,
+  duration,
+}: {
+  imageUrls: (string | null)[]
+  audioBlobUrl: string | null
+  duration: number
+}) {
+  const validImages = imageUrls.filter((u): u is string => !!u)
+  const [stage, setStage] = useState<'idle' | 'loading-wasm' | 'downloading' | 'encoding' | 'done' | 'error'>('idle')
+  const [progress, setProgress] = useState(0)
+  const [videoUrl, setVideoUrl] = useState<string | null>(null)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const mountedRef = useRef(true)
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => { mountedRef.current = false }
+  }, [])
+
+  async function assemble() {
+    if (validImages.length === 0) return
+    setStage('loading-wasm')
+    setProgress(0)
+    setVideoUrl(null)
+    setErrorMsg(null)
+
+    try {
+      const { ffmpeg, fetchFile } = await loadFFmpegLib()
+      if (!mountedRef.current) return
+
+      const onProgress = ({ progress: p }: { progress: number }) => {
+        if (mountedRef.current) setProgress(Math.round(p * 100))
+      }
+      ffmpeg.on('progress', onProgress)
+
+      // Download images via proxy
+      setStage('downloading')
+      for (let i = 0; i < validImages.length; i++) {
+        const proxyUrl = `/api/reel-creator/proxy-asset?url=${encodeURIComponent(validImages[i])}`
+        const res = await fetch(proxyUrl)
+        const buf = await res.arrayBuffer()
+        await ffmpeg.writeFile(`img${i}.jpg`, new Uint8Array(buf))
+        if (mountedRef.current) setProgress(Math.round(((i + 1) / validImages.length) * 40))
+      }
+
+      // Write audio if available
+      let hasAudio = false
+      if (audioBlobUrl) {
+        const audioData = await fetchFile(audioBlobUrl)
+        await ffmpeg.writeFile('audio.mp3', audioData)
+        hasAudio = true
+      }
+
+      // Build concat file
+      const perDuration = Math.max(Math.round(duration / validImages.length), 3)
+      let concatTxt = ''
+      for (let i = 0; i < validImages.length; i++) {
+        concatTxt += `file 'img${i}.jpg'\nduration ${perDuration}\n`
+      }
+      // Repeat last frame (concat demuxer quirk)
+      concatTxt += `file 'img${validImages.length - 1}.jpg'\n`
+      const encoder = new TextEncoder()
+      await ffmpeg.writeFile('concat.txt', encoder.encode(concatTxt))
+
+      // Encode
+      setStage('encoding')
+      const args = [
+        '-f', 'concat', '-safe', '0', '-i', 'concat.txt',
+        ...(hasAudio ? ['-i', 'audio.mp3'] : []),
+        '-vf', 'scale=576:1024:force_original_aspect_ratio=decrease,pad=576:1024:(ow-iw)/2:(oh-ih)/2,setsar=1,format=yuv420p',
+        '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28',
+        ...(hasAudio ? ['-c:a', 'aac', '-b:a', '128k', '-shortest'] : []),
+        '-movflags', '+faststart',
+        'output.mp4',
+      ]
+      await ffmpeg.exec(args)
+
+      ffmpeg.off('progress', onProgress)
+
+      // Read result
+      const raw = await ffmpeg.readFile('output.mp4')
+      const blob = new Blob([raw as unknown as Uint8Array<ArrayBuffer>], { type: 'video/mp4' })
+      const url = URL.createObjectURL(blob)
+      if (mountedRef.current) { setVideoUrl(url); setStage('done'); setProgress(100) }
+    } catch (e) {
+      if (mountedRef.current) {
+        setErrorMsg(e instanceof Error ? e.message : 'Erro na montagem')
+        setStage('error')
+      }
+    }
+  }
+
+  const STAGE_LABELS: Record<string, string> = {
+    'loading-wasm': 'Carregando FFmpeg...',
+    'downloading':  'Baixando cenas...',
+    'encoding':     `Codificando vídeo... ${progress}%`,
+    'done':         'Vídeo pronto ✓',
+    'error':        'Erro',
+  }
+
+  const isProcessing = ['loading-wasm', 'downloading', 'encoding'].includes(stage)
+
+  return (
+    <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+      <div className="flex items-center px-4 py-3 border-b border-gray-50">
+        <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+          <Clapperboard className="w-4 h-4 text-gray-400" />
+          🎬 Montar Reel Final
+          <span className="text-xs font-normal text-gray-400">(MP4 · FFmpeg local)</span>
+        </p>
+      </div>
+
+      <div className="p-4 space-y-3">
+        {/* Status summary */}
+        <div className="grid grid-cols-3 gap-2 text-[11px]">
+          {[
+            { label: 'Cenas', value: `${validImages.length} imagens`, ok: validImages.length > 0 },
+            { label: 'Narração', value: audioBlobUrl ? 'pronta' : 'sem áudio', ok: !!audioBlobUrl },
+            { label: 'Duração', value: `${duration}s (~${Math.max(Math.round(duration / Math.max(validImages.length, 1)), 3)}s/cena)`, ok: true },
+          ].map(item => (
+            <div key={item.label} className={`rounded-xl px-3 py-2 border ${item.ok ? 'bg-green-50 border-green-100 text-green-700' : 'bg-gray-50 border-gray-100 text-gray-500'}`}>
+              <p className="font-semibold">{item.label}</p>
+              <p className="mt-0.5 truncate">{item.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {validImages.length === 0 && (
+          <p className="text-xs text-gray-400">Gere ao menos uma imagem de cena acima para montar o vídeo.</p>
+        )}
+
+        {/* Assemble button */}
+        <button
+          type="button"
+          onClick={assemble}
+          disabled={isProcessing || validImages.length === 0}
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {isProcessing
+            ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {STAGE_LABELS[stage]}</>
+            : <><Clapperboard className="w-3.5 h-3.5" /> Montar Reel MP4</>
+          }
+        </button>
+
+        {/* Progress bar during encoding */}
+        {stage === 'encoding' && (
+          <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+            {/* eslint-disable-next-line react/forbid-component-props */}
+            <div
+              className="h-full bg-emerald-500 transition-all duration-500 rounded-full"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        )}
+
+        {stage === 'loading-wasm' && (
+          <p className="text-[10px] text-gray-400 flex items-center gap-1.5">
+            <BarChart2 className="w-3 h-3 animate-pulse" />
+            Baixando FFmpeg (~20MB, apenas na primeira vez)
+          </p>
+        )}
+
+        {errorMsg && <p className="text-xs text-red-500">{errorMsg}</p>}
+
+        {/* Video result */}
+        {videoUrl && (
+          <div className="space-y-2">
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            <video
+              src={videoUrl}
+              controls
+              playsInline
+              className="w-full max-w-[200px] mx-auto rounded-xl aspect-[9/16] object-cover border border-gray-200"
+            />
+            <div className="flex justify-center">
+              <a
+                href={videoUrl}
+                download={`reel-${Date.now()}.mp4`}
+                className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-xl hover:bg-emerald-700 transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" /> Baixar Reel MP4
               </a>
             </div>
           </div>
