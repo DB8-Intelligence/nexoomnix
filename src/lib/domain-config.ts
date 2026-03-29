@@ -26,7 +26,7 @@ export function isReelCreatorDomain(hostname: string): boolean {
 }
 
 /** Cookie name used to signal the ReelCreator standalone mode in the dashboard */
-export const PRODUCT_MODE_COOKIE = 'x-nexopro-product-mode'
+export const PRODUCT_MODE_COOKIE = 'x-nexoomnix-product-mode'
 
 /** Returns config for a given hostname, or null for the default nexoomnix.com domain */
 export function getDomainConfig(hostname: string): DomainConfig | null {
@@ -36,4 +36,4 @@ export function getDomainConfig(hostname: string): DomainConfig | null {
 }
 
 /** Cookie name used to persist detected niche across requests */
-export const NICHE_COOKIE = 'x-nexopro-niche'
+export const NICHE_COOKIE = 'x-nexoomnix-niche'

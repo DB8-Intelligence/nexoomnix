@@ -27,7 +27,7 @@ export default async function DashboardLayout({
   const tenant = Array.isArray(profile.tenants) ? profile.tenants[0] : profile.tenants
 
   const cookieStore = await cookies()
-  const productMode = cookieStore.get(PRODUCT_MODE_COOKIE)?.value ?? 'nexopro'
+  const productMode = cookieStore.get(PRODUCT_MODE_COOKIE)?.value ?? 'nexoomnix'
 
   return (
     <DashboardShell tenant={tenant} profile={profile} productMode={productMode}>

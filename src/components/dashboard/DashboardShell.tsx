@@ -12,7 +12,7 @@ interface DashboardShellProps {
   children: React.ReactNode
 }
 
-export function DashboardShell({ tenant, profile, productMode = 'nexopro', children }: DashboardShellProps) {
+export function DashboardShell({ tenant, profile, productMode = 'nexoomnix', children }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // Aplica o nicho como data attribute no html para trocar as CSS vars

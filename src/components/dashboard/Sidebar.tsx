@@ -81,7 +81,7 @@ const REELCREATOR_NAV: NavItem[] = [
   { href: '/redes-sociais',        label: 'Omnix Social',      icon: <Share2 className="w-4 h-4" />,   requiredModule: 'social',     badge: 'Pro' },
 ]
 
-export function Sidebar({ tenant, open, onClose, productMode = 'nexopro' }: SidebarProps) {
+export function Sidebar({ tenant, open, onClose, productMode = 'nexoomnix' }: SidebarProps) {
   const pathname = usePathname()
   const niche = getNicheConfig(tenant.niche)
   const isReelCreator = productMode === 'reelcreator'
