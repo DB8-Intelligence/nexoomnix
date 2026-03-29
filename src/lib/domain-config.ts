@@ -12,11 +12,11 @@ export interface DomainConfig {
 export const DOMAIN_MAP: Record<string, DomainConfig> = {
   'imobpro.app':           { niche: 'imoveis',    landingPath: '/imobpro',       productName: 'iMobPro' },
   'salaopro.app':          { niche: 'beleza',      landingPath: '/salaopro',      productName: 'Salão Pro' },
-  'reelcreator.app':       { niche: 'fotografia',  landingPath: '/reelcreator',   productName: 'ReelCreator AI' },
+  'reelcreator.app':       { niche: 'fotografia',  landingPath: '/reelcreator',   productName: 'Omnix Reels' },
   // Preview / staging aliases
   'www.imobpro.app':       { niche: 'imoveis',    landingPath: '/imobpro',       productName: 'iMobPro' },
   'www.salaopro.app':      { niche: 'beleza',      landingPath: '/salaopro',      productName: 'Salão Pro' },
-  'www.reelcreator.app':   { niche: 'fotografia',  landingPath: '/reelcreator',   productName: 'ReelCreator AI' },
+  'www.reelcreator.app':   { niche: 'fotografia',  landingPath: '/reelcreator',   productName: 'Omnix Reels' },
 }
 
 /** Returns true if the hostname is the ReelCreator standalone product */
@@ -28,7 +28,7 @@ export function isReelCreatorDomain(hostname: string): boolean {
 /** Cookie name used to signal the ReelCreator standalone mode in the dashboard */
 export const PRODUCT_MODE_COOKIE = 'x-nexopro-product-mode'
 
-/** Returns config for a given hostname, or null for the default nexopro.app domain */
+/** Returns config for a given hostname, or null for the default nexoomnix.com domain */
 export function getDomainConfig(hostname: string): DomainConfig | null {
   // Strip port for local dev (e.g. localhost:3000)
   const host = hostname.split(':')[0]

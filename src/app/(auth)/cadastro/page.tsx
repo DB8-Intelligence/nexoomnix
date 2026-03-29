@@ -179,7 +179,7 @@ export default function CadastroPage() {
             <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center">
               <Zap className="w-4 h-4 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-900">NexoPro</span>
+            <span className="text-xl font-bold text-gray-900">NexoOmnix</span>
           </div>
         </div>
 

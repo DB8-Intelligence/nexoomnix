@@ -46,7 +46,7 @@ export default function LoginPage() {
             <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center">
               <Zap className="w-5 h-5 text-white" />
             </div>
-            <span className="text-2xl font-bold text-gray-900">NexoPro</span>
+            <span className="text-2xl font-bold text-gray-900">NexoOmnix</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Bem-vindo de volta</h1>
           <p className="text-gray-500 mt-1">Entre na sua conta para continuar</p>

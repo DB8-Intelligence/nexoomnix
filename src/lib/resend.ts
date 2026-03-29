@@ -1,7 +1,7 @@
 import { Resend } from 'resend'
 
 // Server-side only — lazy singleton
-const FROM = process.env.RESEND_FROM ?? 'NexoPro <noreply@nexopro.app>'
+const FROM = process.env.RESEND_FROM ?? 'NexoOmnix <noreply@nexoomnix.com>'
 
 interface SendOptions {
   to: string
@@ -19,10 +19,10 @@ export async function sendEmail(opts: SendOptions) {
 
 export function welcomeEmail(tenantName: string, plan: string): { subject: string; html: string } {
   return {
-    subject: `Bem-vindo ao NexoPro, ${tenantName}! 🚀`,
+    subject: `Bem-vindo ao NexoOmnix, ${tenantName}! 🚀`,
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
-        <h1 style="font-size:24px;color:#1d4ed8">Bem-vindo ao NexoPro!</h1>
+        <h1 style="font-size:24px;color:#1d4ed8">Bem-vindo ao NexoOmnix!</h1>
         <p style="color:#374151">Olá, <strong>${tenantName}</strong>!</p>
         <p style="color:#374151">
           Sua assinatura <strong>${plan}</strong> foi ativada com sucesso.
@@ -35,7 +35,7 @@ export function welcomeEmail(tenantName: string, plan: string): { subject: strin
           Acessar meu painel →
         </a>
         <p style="color:#9ca3af;font-size:12px;margin-top:32px">
-          NexoPro • Gestão inteligente para seu negócio
+          NexoOmnix • Gestão inteligente para seu negócio
         </p>
       </div>
     `,
@@ -44,13 +44,13 @@ export function welcomeEmail(tenantName: string, plan: string): { subject: strin
 
 export function paymentFailedEmail(tenantName: string, retryUrl: string): { subject: string; html: string } {
   return {
-    subject: `Pagamento não processado — NexoPro`,
+    subject: `Pagamento não processado — NexoOmnix`,
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
         <h1 style="font-size:22px;color:#dc2626">Problema com seu pagamento</h1>
         <p style="color:#374151">Olá, <strong>${tenantName}</strong>!</p>
         <p style="color:#374151">
-          Não conseguimos processar o pagamento da sua assinatura NexoPro.
+          Não conseguimos processar o pagamento da sua assinatura NexoOmnix.
           Para evitar a interrupção do serviço, atualize seu método de pagamento.
         </p>
         <a
@@ -60,7 +60,7 @@ export function paymentFailedEmail(tenantName: string, retryUrl: string): { subj
           Atualizar pagamento →
         </a>
         <p style="color:#9ca3af;font-size:12px;margin-top:32px">
-          NexoPro • Se precisar de ajuda, responda este e-mail.
+          NexoOmnix • Se precisar de ajuda, responda este e-mail.
         </p>
       </div>
     `,
@@ -69,13 +69,13 @@ export function paymentFailedEmail(tenantName: string, retryUrl: string): { subj
 
 export function trialEndingEmail(tenantName: string, daysLeft: number): { subject: string; html: string } {
   return {
-    subject: `Seu trial expira em ${daysLeft} dia${daysLeft !== 1 ? 's' : ''} — NexoPro`,
+    subject: `Seu trial expira em ${daysLeft} dia${daysLeft !== 1 ? 's' : ''} — NexoOmnix`,
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
         <h1 style="font-size:22px;color:#d97706">Seu período gratuito está acabando</h1>
         <p style="color:#374151">Olá, <strong>${tenantName}</strong>!</p>
         <p style="color:#374151">
-          Seu trial do NexoPro expira em <strong>${daysLeft} dia${daysLeft !== 1 ? 's' : ''}</strong>.
+          Seu trial do NexoOmnix expira em <strong>${daysLeft} dia${daysLeft !== 1 ? 's' : ''}</strong>.
           Escolha um plano para continuar usando todas as funcionalidades.
         </p>
         <a

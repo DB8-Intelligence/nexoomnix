@@ -15,14 +15,14 @@ const NICHES = [
 ]
 
 const FEATURES = [
-  'Agenda inteligente online',
-  'Gestão de clientes / CRM',
+  'Omnix Agenda — agendamentos online',
+  'Omnix CRM — gestão de clientes',
+  'Omnix Reels — reels virais com IA',
+  'Omnix Social — posts automáticos',
+  'Omnix Sites — site público do negócio',
   'Financeiro e fluxo de caixa',
   'DRE automático mensal',
-  'Notas fiscais NFS-e',
   'Agente IA Contador 24h',
-  'ContentAI — posts e reels',
-  'Site público com agendamento',
 ]
 
 const PLANS = [
@@ -41,7 +41,7 @@ export function NexoProLanding() {
           <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
             <Zap className="w-4 h-4 text-white" />
           </div>
-          <span className="font-bold text-gray-900 text-lg">NexoPro</span>
+          <span className="font-bold text-gray-900 text-lg">NexoOmnix</span>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900">
@@ -63,12 +63,12 @@ export function NexoProLanding() {
           14 dias grátis — sem cartão de crédito
         </div>
         <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 leading-tight mb-4">
-          Gestão completa para<br />
-          <span className="text-blue-600">qualquer negócio</span>
+          Crie, automatize e escale<br />
+          <span className="text-blue-600">o marketing do seu negócio</span>
         </h1>
         <p className="text-lg text-gray-500 mb-8 max-w-xl mx-auto">
-          Agenda, clientes, financeiro, DRE, notas fiscais e Agente IA Contador no mesmo lugar.
-          Feito para MEIs e pequenas empresas brasileiras.
+          Plataforma completa para criar reels virais, publicar nas redes sociais,
+          gerenciar clientes e crescer online — tudo num só lugar.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
@@ -158,7 +158,7 @@ export function NexoProLanding() {
 
       {/* Footer */}
       <footer className="px-6 py-8 border-t border-gray-100 text-center text-xs text-gray-400">
-        <p>© {new Date().getFullYear()} NexoPro · DB8-Intelligence · Todos os direitos reservados</p>
+        <p>© {new Date().getFullYear()} NexoOmnix · DB8-Intelligence · Todos os direitos reservados</p>
         <p className="mt-1">
           <Link href="/login" className="hover:text-gray-600">Entrar</Link>
           {' · '}

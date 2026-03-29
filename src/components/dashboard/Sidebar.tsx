@@ -34,7 +34,7 @@ function getNavItems(tenant: Tenant): NavItem[] {
     ? { href: '/agenda', label: 'Ordens de Serviço', icon: <ClipboardList className="w-4 h-4" />, requiredModule: 'agenda' }
     : niche === 'imoveis'
       ? { href: '/agenda', label: 'Visitas', icon: <Calendar className="w-4 h-4" />, requiredModule: 'agenda' }
-      : { href: '/agenda', label: 'Agenda', icon: <Calendar className="w-4 h-4" />, requiredModule: 'agenda' }
+      : { href: '/agenda', label: 'Omnix Agenda', icon: <Calendar className="w-4 h-4" />, requiredModule: 'agenda' }
 
   const clientsItem: NavItem = {
     href: '/clientes',
@@ -42,7 +42,7 @@ function getNavItems(tenant: Tenant): NavItem[] {
       : niche === 'educacao' ? 'Alunos'
       : niche === 'pet' ? 'Tutores & Pets'
       : niche === 'imoveis' ? 'Clientes / CRM'
-      : 'Clientes',
+      : 'Omnix CRM',
     icon: <Users className="w-4 h-4" />,
     requiredModule: 'clientes',
   }
@@ -65,20 +65,20 @@ function getNavItems(tenant: Tenant): NavItem[] {
     { href: '/financeiro', label: 'Financeiro', icon: <DollarSign className="w-4 h-4" />, requiredModule: 'financeiro' },
     { href: '/relatorios', label: 'Relatórios', icon: <PieChart className="w-4 h-4" />, requiredModule: 'contabilidade', badge: 'Pro+' },
     { href: '/contabilidade', label: 'Contabilidade', icon: <BarChart3 className="w-4 h-4" />, requiredModule: 'contabilidade', badge: 'Pro+' },
-    { href: '/conteudo', label: 'ContentAI', icon: <Sparkles className="w-4 h-4" />, requiredModule: 'content_ai', badge: 'Pro' },
-    { href: '/reel-creator', label: 'ReelCreator AI', icon: <Film className="w-4 h-4" />, requiredModule: 'content_ai', badge: 'Pro' },
+    { href: '/conteudo', label: 'Omnix Content', icon: <Sparkles className="w-4 h-4" />, requiredModule: 'content_ai', badge: 'Pro' },
+    { href: '/reel-creator', label: 'Omnix Reels', icon: <Film className="w-4 h-4" />, requiredModule: 'content_ai', badge: 'Pro' },
     { href: '/reel-creator/analisar', label: 'Analisar por Link', icon: <Zap className="w-4 h-4" />, requiredModule: 'content_ai', badge: 'Pro' },
-    { href: '/redes-sociais', label: 'Redes Sociais IA', icon: <Share2 className="w-4 h-4" />, requiredModule: 'social', badge: 'Pro' },
-    { href: '/site-publico', label: 'Site Público', icon: <Globe className="w-4 h-4" />, requiredModule: 'site', badge: 'Pro' },
+    { href: '/redes-sociais', label: 'Omnix Social', icon: <Share2 className="w-4 h-4" />, requiredModule: 'social', badge: 'Pro' },
+    { href: '/site-publico', label: 'Omnix Sites', icon: <Globe className="w-4 h-4" />, requiredModule: 'site', badge: 'Pro' },
     { href: '/ia-contador', label: 'IA Contador', icon: <Bot className="w-4 h-4" />, requiredModule: 'ia_contador', badge: 'Enterprise' },
   ]
 }
 
 const REELCREATOR_NAV: NavItem[] = [
-  { href: '/reel-creator',         label: 'ReelCreator AI',   icon: <Film className="w-4 h-4" />,     requiredModule: 'content_ai' },
+  { href: '/reel-creator',         label: 'Omnix Reels',       icon: <Film className="w-4 h-4" />,     requiredModule: 'content_ai' },
   { href: '/reel-creator/analisar',label: 'Analisar por Link', icon: <Zap className="w-4 h-4" />,      requiredModule: 'content_ai', badge: 'Pro' },
-  { href: '/conteudo',             label: 'ContentAI',         icon: <Sparkles className="w-4 h-4" />, requiredModule: 'content_ai' },
-  { href: '/redes-sociais',        label: 'Redes Sociais',     icon: <Share2 className="w-4 h-4" />,   requiredModule: 'social',     badge: 'Pro' },
+  { href: '/conteudo',             label: 'Omnix Content',     icon: <Sparkles className="w-4 h-4" />, requiredModule: 'content_ai' },
+  { href: '/redes-sociais',        label: 'Omnix Social',      icon: <Share2 className="w-4 h-4" />,   requiredModule: 'social',     badge: 'Pro' },
 ]
 
 export function Sidebar({ tenant, open, onClose, productMode = 'nexopro' }: SidebarProps) {
@@ -108,7 +108,7 @@ export function Sidebar({ tenant, open, onClose, productMode = 'nexopro' }: Side
               {isReelCreator ? 'ReelCreator AI' : tenant.name}
             </div>
             <div className="text-xs text-gray-400 truncate">
-              {isReelCreator ? 'by NexoPro' : niche.brandName}
+              {isReelCreator ? 'by NexoOmnix' : niche.brandName}
             </div>
           </div>
         </Link>

@@ -5,11 +5,11 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: {
-    default: 'NexoPro — Gestão completa para pequenos negócios',
-    template: '%s | NexoPro',
+    default: 'NexoOmnix — Plataforma completa para criar, automatizar e escalar',
+    template: '%s | NexoOmnix',
   },
-  description: 'Agenda, clientes, financeiro, DRE, notas fiscais e Agente IA Contador. Feito para MEIs e pequenas empresas brasileiras.',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'https://nexopro.app'),
+  description: 'Omnix Agenda, Omnix CRM, Omnix Reels, Omnix Social e Omnix Sites. Tudo que o seu negócio precisa para crescer online.',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'https://nexoomnix.com'),
   robots: {
     index: true,
     follow: true,

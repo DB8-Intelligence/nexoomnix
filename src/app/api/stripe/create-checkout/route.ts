@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     locale: 'pt-BR',
     allow_promotion_codes: true,
     custom_text: {
-      submit: { message: `Ao assinar, você concorda com os termos de uso do NexoPro.` },
+      submit: { message: `Ao assinar, você concorda com os termos de uso do NexoOmnix.` },
     },
   })
 

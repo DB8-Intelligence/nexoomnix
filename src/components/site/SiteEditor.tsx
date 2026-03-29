@@ -114,7 +114,7 @@ export function SiteEditor() {
         <div>
           <p className="text-sm font-medium text-gray-900">Site público ativado</p>
           <p className="text-xs text-gray-500 mt-0.5">
-            {form.site_enabled ? `Acessível em: nexopro.app${siteUrl}` : 'Site desativado — não aparece para visitantes'}
+            {form.site_enabled ? `Acessível em: nexoomnix.com${siteUrl}` : 'Site desativado — não aparece para visitantes'}
           </p>
         </div>
         <button
@@ -130,7 +130,7 @@ export function SiteEditor() {
       {form.site_enabled && (
         <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl">
           <Globe className="w-4 h-4 text-blue-600 flex-shrink-0" />
-          <span className="text-sm text-blue-700 flex-1 truncate">nexopro.app{siteUrl}</span>
+          <span className="text-sm text-blue-700 flex-1 truncate">nexoomnix.com{siteUrl}</span>
           <button
             type="button"
             onClick={handleCopyLink}
