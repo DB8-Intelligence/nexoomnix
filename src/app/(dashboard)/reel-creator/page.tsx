@@ -1133,6 +1133,16 @@ export default function ReelCreatorPage() {
   const [talkingObject, setTalkingObject] = useState(false)
   const [selectedTalkingObject, setSelectedTalkingObject] = useState<TalkingObject | null>(null)
 
+  // Style reference
+  const [styleReference, setStyleReference] = useState<string | null>(null)
+  const [showStylePanel, setShowStylePanel] = useState(false)
+  const [styleAnalysis, setStyleAnalysis] = useState<{
+    stylePrompt: string; colorPalette: string; mood: string; composition: string
+  } | null>(null)
+  const [styleAnalyzing, setStyleAnalyzing] = useState(false)
+  const [styleError, setStyleError] = useState<string | null>(null)
+  const styleFileRef = useRef<HTMLInputElement>(null)
+
   // Generation state
   const [generating, setGenerating] = useState(false)
   const [output, setOutput] = useState('')
@@ -1164,6 +1174,35 @@ export default function ReelCreatorPage() {
     setTalkingObject(true)
   }
 
+  async function handleStyleFile(file: File) {
+    if (styleAnalyzing) return
+    setStyleAnalyzing(true)
+    setStyleError(null)
+    setStyleAnalysis(null)
+    setStyleReference(null)
+    const fd = new FormData()
+    fd.append('image', file)
+    try {
+      const res = await fetch('/api/reel-creator/analyze-style', { method: 'POST', body: fd })
+      const data = await res.json() as {
+        stylePrompt?: string; colorPalette?: string; mood?: string; composition?: string; error?: string
+      }
+      if (!res.ok || data.error) { setStyleError(data.error ?? 'Falha na análise'); return }
+      const analysis = {
+        stylePrompt: data.stylePrompt!,
+        colorPalette: data.colorPalette!,
+        mood: data.mood!,
+        composition: data.composition!,
+      }
+      setStyleAnalysis(analysis)
+      setStyleReference(analysis.stylePrompt)
+    } catch {
+      setStyleError('Falha na conexão. Tente novamente.')
+    } finally {
+      setStyleAnalyzing(false)
+    }
+  }
+
   const sections = done ? splitSections(output) : []
 
   const generate = useCallback(async () => {
@@ -1189,6 +1228,7 @@ export default function ReelCreatorPage() {
           characterDna: character?.dna || undefined,
           characterObject: character?.object || undefined,
           personaId: personaId || undefined,
+          styleReference: styleReference || undefined,
         }),
       })
 
@@ -1217,7 +1257,7 @@ export default function ReelCreatorPage() {
     } finally {
       setGenerating(false)
     }
-  }, [topic, url, description, format, duration, talkingObject, selectedTalkingObject, generating, character, personaId])
+  }, [topic, url, description, format, duration, talkingObject, selectedTalkingObject, generating, character, personaId, styleReference])
 
   const nicheLabel = NICHE_LABELS[niche] ?? niche
 
@@ -1599,6 +1639,94 @@ export default function ReelCreatorPage() {
                 </div>
               )
             })()}</div>
+
+          {/* ── Estilo Visual de Referência ── */}
+          <div className="border border-gray-200 rounded-xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowStylePanel(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-2.5">
+                <ImageIcon className="w-4 h-4 text-orange-400" />
+                <span className="text-sm font-medium text-gray-800">🎨 Estilo Visual de Referência</span>
+                {styleAnalysis ? (
+                  <span className="flex items-center gap-1 px-2 py-0.5 bg-orange-50 border border-orange-200 rounded-full text-xs font-medium text-orange-700">
+                    Estilo aplicado
+                  </span>
+                ) : (
+                  <span className="text-xs text-gray-400">Opcional — envie um print de reel</span>
+                )}
+              </div>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showStylePanel ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showStylePanel && (
+              <div className="border-t border-gray-100 p-4 space-y-3">
+                {!styleAnalysis ? (
+                  <>
+                    <div
+                      onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleStyleFile(f) }}
+                      onDragOver={e => e.preventDefault()}
+                      onClick={() => !styleAnalyzing && styleFileRef.current?.click()}
+                      className="border-2 border-dashed border-gray-200 hover:border-orange-300 hover:bg-orange-50/30 rounded-xl p-6 text-center cursor-pointer transition-all"
+                    >
+                      {styleAnalyzing ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <Loader2 className="w-6 h-6 text-orange-400 animate-spin" />
+                          <p className="text-xs text-gray-500">Analisando estilo visual...</p>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2">
+                          <Upload className="w-6 h-6 text-gray-400" />
+                          <p className="text-sm font-medium text-gray-700">Envie um print de reel de referência</p>
+                          <p className="text-xs text-gray-400">JPG, PNG, WEBP — arrastar ou clicar</p>
+                        </div>
+                      )}
+                      <input
+                        ref={styleFileRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        aria-label="Selecionar imagem de estilo de referência"
+                        title="Selecionar imagem de estilo de referência"
+                        onChange={e => { const f = e.target.files?.[0]; if (f) handleStyleFile(f) }}
+                      />
+                    </div>
+                    {styleError && <p className="text-xs text-red-500 text-center">{styleError}</p>}
+                  </>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="p-2.5 bg-orange-50 border border-orange-100 rounded-xl">
+                        <p className="text-[10px] font-semibold text-orange-600 uppercase tracking-wide mb-0.5">Paleta</p>
+                        <p className="text-xs text-gray-700">{styleAnalysis.colorPalette}</p>
+                      </div>
+                      <div className="p-2.5 bg-orange-50 border border-orange-100 rounded-xl">
+                        <p className="text-[10px] font-semibold text-orange-600 uppercase tracking-wide mb-0.5">Atmosfera</p>
+                        <p className="text-xs text-gray-700">{styleAnalysis.mood}</p>
+                      </div>
+                    </div>
+                    <div className="p-2.5 bg-orange-50 border border-orange-100 rounded-xl">
+                      <p className="text-[10px] font-semibold text-orange-600 uppercase tracking-wide mb-0.5">Composição</p>
+                      <p className="text-xs text-gray-700">{styleAnalysis.composition}</p>
+                    </div>
+                    <div className="p-2.5 bg-gray-50 border border-gray-200 rounded-xl">
+                      <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Prompt injetado</p>
+                      <p className="text-[11px] text-gray-600 font-mono leading-relaxed">{styleAnalysis.stylePrompt}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setStyleAnalysis(null); setStyleReference(null) }}
+                      className="text-xs text-gray-400 hover:text-red-500 underline"
+                    >
+                      Remover referência
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Generate button */}
           <button

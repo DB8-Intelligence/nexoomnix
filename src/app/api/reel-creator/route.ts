@@ -43,6 +43,7 @@ function buildPrompt(p: {
   characterDna?: string
   characterObject?: string
   personaId?: PersonaId
+  styleReference?: string
 }): string {
   const source = [
     p.url && `URL de referência: ${p.url}`,
@@ -52,6 +53,10 @@ function buildPrompt(p: {
   const persona = p.personaId ? CONTENT_PERSONAS[p.personaId] : null
   const personaSection = persona
     ? `\n**Persona de Conteúdo:** ${persona.emoji} ${persona.name} — ${persona.tagline}\n**Tom de voz:** ${persona.contentTone}\n**Fórmula de roteiro:** ${persona.scriptFormula}\n**Pilares de conteúdo:** ${persona.contentPillars.join(' • ')}\n**Ganchos de legenda sugeridos:** ${persona.captionHooks.join(' | ')}`
+    : ''
+
+  const styleReferenceSection = p.styleReference
+    ? `\n**Estilo Visual de Referência:** ${p.styleReference}\nPREFIXE cada "🖼️ Prompt AI" de cena com este estilo. O prefixo deve vir antes de qualquer descrição de personagem ou ambiente.`
     : ''
 
   const characterSection = p.characterDna && p.characterObject
@@ -100,7 +105,7 @@ Para cada objeto:
 **Formato:** ${FORMAT_LABELS[p.format] ?? p.format}
 **Duração alvo:** ${p.duration}s
 **Tema:** ${p.topic}
-${source}${characterSection}${personaSection}
+${source}${characterSection}${styleReferenceSection}${personaSection}
 
 Gere o PACOTE COMPLETO DE PRODUÇÃO. Adapte TODO o conteúdo para o nicho ${p.nichoLabel}: vocabulário, cenários, dores, soluções, exemplos e tom de voz.${persona ? ` Siga rigorosamente a persona "${persona.name}": tom ${persona.contentTone}, fórmula de roteiro e pilares de conteúdo fornecidos acima.` : ''}
 
@@ -171,6 +176,7 @@ export async function POST(req: NextRequest) {
     characterDna?: string
     characterObject?: string
     personaId?: PersonaId
+    styleReference?: string
   }
 
   if (!body.topic?.trim()) {
@@ -225,6 +231,7 @@ export async function POST(req: NextRequest) {
     characterDna: body.characterDna?.trim() || undefined,
     characterObject: body.characterObject?.trim() || undefined,
     personaId: body.personaId || undefined,
+    styleReference: body.styleReference?.trim() || undefined,
   })
 
   const encoder = new TextEncoder()
