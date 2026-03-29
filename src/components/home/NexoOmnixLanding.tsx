@@ -35,7 +35,7 @@ const PLANS = [
   { name: 'Enterprise', price: 'R$ 699', desc: 'Equipes' },
 ]
 
-export function NexoProLanding() {
+export function NexoOmnixLanding() {
   return (
     <div className="min-h-screen bg-white">
       {/* Nav */}
