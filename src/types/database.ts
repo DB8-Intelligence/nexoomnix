@@ -669,6 +669,192 @@ export interface CourseEnrollment {
   course?: Course
 }
 
+// ============================================================
+// CRM PIPELINE (013)
+// ============================================================
+
+export type CrmType = 'vendas' | 'imobiliario' | 'atendimento'
+
+export type DealPriority = 'baixa' | 'media' | 'alta' | 'urgente'
+
+export type CrmActivityType =
+  | 'stage_change'
+  | 'note'
+  | 'call'
+  | 'email_sent'
+  | 'whatsapp_sent'
+  | 'instagram_dm'
+  | 'facebook_msg'
+  | 'appointment_created'
+  | 'appointment_confirmed'
+  | 'transaction_created'
+  | 'proposal_sent'
+  | 'visit_scheduled'
+  | 'visit_done'
+  | 'deal_won'
+  | 'deal_lost'
+  | 'system'
+
+export type CrmChannelType =
+  | 'whatsapp'
+  | 'instagram'
+  | 'facebook'
+  | 'telegram'
+  | 'site'
+  | 'telefone'
+  | 'indicacao'
+  | 'google'
+  | 'outro'
+
+export type MessageStatus = 'pending' | 'sent' | 'delivered' | 'read' | 'failed'
+
+export interface CrmPipeline {
+  id: string
+  tenant_id: string
+  name: string
+  crm_type: CrmType
+  is_default: boolean
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  // Joins
+  stages?: CrmStage[]
+}
+
+export interface CrmStage {
+  id: string
+  pipeline_id: string
+  tenant_id: string
+  name: string
+  color: string
+  position: number
+  is_won: boolean
+  is_lost: boolean
+  auto_days_alert: number | null
+  created_at: string
+  // Joins
+  deals?: CrmDeal[]
+}
+
+export interface CrmDeal {
+  id: string
+  tenant_id: string
+  pipeline_id: string
+  stage_id: string
+  client_id: string | null
+  title: string
+  contact_name: string | null
+  contact_phone: string | null
+  contact_email: string | null
+  contact_whatsapp: string | null
+  estimated_value: number
+  source_channel: CrmChannelType
+  source_detail: string | null
+  priority: DealPriority
+  assigned_to: string | null
+  expected_close_at: string | null
+  won_at: string | null
+  lost_at: string | null
+  lost_reason: string | null
+  stage_entered_at: string
+  // Imobiliário
+  property_id: string | null
+  interest_type: string | null
+  price_min: number | null
+  price_max: number | null
+  preferred_areas: string[]
+  // Atendimento
+  next_appointment_id: string | null
+  tags: string[]
+  notes: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  // Joins
+  client?: Client
+  stage?: CrmStage
+  assigned?: Profile
+  channels?: CrmDealChannel[]
+  property?: Property
+  next_appointment?: Appointment
+}
+
+export interface CrmDealChannel {
+  id: string
+  deal_id: string
+  tenant_id: string
+  channel: CrmChannelType
+  identifier: string
+  display_name: string | null
+  is_primary: boolean
+  metadata: Record<string, unknown>
+  created_at: string
+}
+
+export interface CrmActivity {
+  id: string
+  deal_id: string
+  tenant_id: string
+  user_id: string | null
+  type: CrmActivityType
+  title: string
+  description: string | null
+  metadata: Record<string, unknown>
+  created_at: string
+  // Joins
+  user?: Profile
+}
+
+export interface CrmMessage {
+  id: string
+  deal_id: string | null
+  tenant_id: string
+  client_id: string | null
+  channel: CrmChannelType
+  direction: 'inbound' | 'outbound'
+  status: MessageStatus
+  content: string
+  template_id: string | null
+  metadata: Record<string, unknown>
+  sent_at: string | null
+  delivered_at: string | null
+  read_at: string | null
+  created_at: string
+  // Joins
+  client?: Client
+  deal?: CrmDeal
+}
+
+export interface CrmMessageTemplate {
+  id: string
+  tenant_id: string
+  name: string
+  channel: CrmChannelType
+  category: string
+  content: string
+  variables: string[]
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+/** CRM suggested type by niche */
+export const CRM_TYPE_BY_NICHE: Record<string, CrmType> = {
+  imoveis: 'imobiliario',
+  beleza: 'atendimento',
+  saude: 'atendimento',
+  nutricao: 'atendimento',
+  pet: 'atendimento',
+  educacao: 'atendimento',
+  fitness: 'atendimento',
+  juridico: 'atendimento',
+  gastronomia: 'atendimento',
+  tecnico: 'vendas',
+  engenharia: 'vendas',
+  fotografia: 'vendas',
+  financas: 'vendas',
+}
+
 /** Dashboard KPIs */
 export interface DashboardKPIs {
   primary: { label: string; value: string | number; trend?: number }
@@ -701,6 +887,13 @@ export interface Database {
       media_library: { Row: MediaLibrary; Insert: Omit<MediaLibrary, 'id' | 'created_at'>; Update: Partial<MediaLibrary> }
       notifications: { Row: Notification; Insert: Omit<Notification, 'id' | 'created_at'>; Update: Partial<Notification> }
       activity_logs: { Row: ActivityLog; Insert: Omit<ActivityLog, 'id' | 'created_at'>; Update: Partial<ActivityLog> }
+      crm_pipelines: { Row: CrmPipeline; Insert: Omit<CrmPipeline, 'id' | 'created_at' | 'updated_at'>; Update: Partial<CrmPipeline> }
+      crm_stages: { Row: CrmStage; Insert: Omit<CrmStage, 'id' | 'created_at'>; Update: Partial<CrmStage> }
+      crm_deals: { Row: CrmDeal; Insert: Omit<CrmDeal, 'id' | 'created_at' | 'updated_at'>; Update: Partial<CrmDeal> }
+      crm_deal_channels: { Row: CrmDealChannel; Insert: Omit<CrmDealChannel, 'id' | 'created_at'>; Update: Partial<CrmDealChannel> }
+      crm_activities: { Row: CrmActivity; Insert: Omit<CrmActivity, 'id' | 'created_at'>; Update: Partial<CrmActivity> }
+      crm_messages: { Row: CrmMessage; Insert: Omit<CrmMessage, 'id' | 'created_at'>; Update: Partial<CrmMessage> }
+      crm_message_templates: { Row: CrmMessageTemplate; Insert: Omit<CrmMessageTemplate, 'id' | 'created_at' | 'updated_at'>; Update: Partial<CrmMessageTemplate> }
     }
     Functions: {
       get_tenant_id: { Args: Record<string, never>; Returns: string }

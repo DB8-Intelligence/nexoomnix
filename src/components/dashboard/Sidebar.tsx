@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import {
   Zap, Calendar, Users, DollarSign, BarChart3, FileText,
   Share2, Globe, Bot, Bell, Settings, X, ChevronRight,
-  ClipboardList, Home, BookOpen, Package, Sparkles, CreditCard, PieChart, Film, FlaskConical
+  ClipboardList, Home, BookOpen, Package, Sparkles, CreditCard, PieChart, Film, FlaskConical, Kanban
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getNicheConfig } from '@/lib/niche-config'
@@ -41,15 +41,22 @@ function getNavItems(tenant: Tenant): NavItem[] {
     label: niche === 'saude' || niche === 'nutricao' ? 'Pacientes'
       : niche === 'educacao' ? 'Alunos'
       : niche === 'pet' ? 'Tutores & Pets'
-      : niche === 'imoveis' ? 'Clientes / CRM'
-      : 'Omnix CRM',
+      : 'Clientes',
     icon: <Users className="w-4 h-4" />,
+    requiredModule: 'clientes',
+  }
+
+  const crmItem: NavItem = {
+    href: '/crm',
+    label: 'Omnix CRM',
+    icon: <Kanban className="w-4 h-4" />,
     requiredModule: 'clientes',
   }
 
   return [
     agendaItem,
     clientsItem,
+    crmItem,
     ...(niche === 'juridico' || niche === 'imoveis' ? [
       { href: '/documentos', label: 'Documentos', icon: <FileText className="w-4 h-4" />, requiredModule: 'documentos' },
     ] : []),
