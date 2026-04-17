@@ -782,3 +782,17 @@ O módulo de Talking Objects foi extraído para um projeto independente:
 
 NÃO duplicar desenvolvimento — qualquer melhoria em Talking Objects
 deve ser feita no repositório viralobj e importada de volta depois.
+
+## NexoOmnix Skills MCP (Repo separado)
+
+O servidor MCP que expõe as skills DB8 como ferramentas Claude Code foi extraído para repo independente:
+
+- Repositório: <https://github.com/DB8-Intelligence/nexoomnix-skills-mcp> (private)
+- Location local: `~/nexoomnix-skills-mcp` (fora deste repo, pasta irmã)
+- Contém: 10 skills (WhatsApp, Reels, Social, Instagram viral engine) + factory n8n
+- Factory: `workflow-generator.mjs` gera 27 workflows (13 nichos × 2 tipos + skill-factory)
+- Sync: `sync-n8n.mjs` publica em <https://automacao.db8intelligence.com.br>
+- Status: ativo, 28 workflows publicados no Railway n8n
+
+NÃO duplicar desenvolvimento de skills aqui — trabalhar no repo nexoomnix-skills-mcp.
+Os JSONs soltos em `n8n/` deste repo são legacy (pré-factory) e devem sair futuramente.
