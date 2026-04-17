@@ -1,0 +1,279 @@
+{
+  "name": "IMovie — Reel Creator: Gerar Pacote de Conteúdo",
+  "nodes": [
+    {
+      "id": "webhook-trigger",
+      "name": "Webhook: Receber Solicitação",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "imovie-reel-creator",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "b4f2a8c1-3e7d-4f91-a2b5-8c6d9e0f1234"
+    },
+    {
+      "id": "respond-202",
+      "name": "Resposta 202 Aceito",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        140
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'accepted', message: 'Gerando pacote IMovie Reel Creator...', job_id: $('Webhook: Receber Solicitação').item.json.body.job_id || '' }) }}",
+        "options": {
+          "responseCode": 202
+        }
+      }
+    },
+    {
+      "id": "code-montar-prompt",
+      "name": "Code: Montar Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        460
+      ],
+      "parameters": {
+        "jsCode": "const body = $('Webhook: Receber Solicitação').item.json.body || $('Webhook: Receber Solicitação').item.json;\n\nconst formato = body.formato || 'reel';\nconst tom = body.tom || 'vendas_diretas';\nconst nichoImovel = body.nicho_imovel || 'terreno';\nconst angulo = body.angulo || '';\nconst descricaoImagens = body.descricao_imagens || '';\nconst callbackUrl = body.callback_url || '';\nconst jobId = body.job_id || '';\n\nconst FORMATO_LABELS = {\n  reel: 'Reel (63-90 segundos)',\n  carrossel: 'Carrossel',\n  stories: 'Sequência de Stories',\n  post_estatico: 'Post Estático'\n};\nconst TOM_LABELS = {\n  educativo: 'Educativo',\n  vendas_diretas: 'Vendas Diretas',\n  inspiracional: 'Inspiracional',\n  tutorial: 'Tutorial passo a passo'\n};\nconst NICHO_LABELS = {\n  terreno: 'Terreno / Lote',\n  casa: 'Casa',\n  apartamento: 'Apartamento',\n  comercial: 'Imóvel Comercial',\n  alto_padrao: 'Alto Padrão'\n};\n\nconst SKILL = `# IMovie Reel Creator — Skill\n\n## Produto\nIMovie / iMobCreator é um SaaS imobiliário que transforma fotos de terrenos e imóveis em vídeos cinematográficos profissionais com IA. Sem edição manual, sem cursos. Fluxo: dados → upload → configuração → processamento → vídeo pronto.\n\n## Público-Alvo\nCorretores sem habilidade de edição, construtoras, arquitetos, investidores.\n\n## Estrutura do Reel (63-90s)\n- Hook (0-3s): frase de impacto\n- Problema/Dor (3-15s): realidade do corretor sem vídeo\n- Solução/Transformação (15-45s): sequência antes/depois + demo do app\n- Prova Social/CTA (45-63s): galeria + CTA claro\n\n## Sequência Visual Ideal\n[0-2s] Texto: SEM CURSOS | SEM EDIÇÃO\n[2-8s] Foto bruta de terreno (crua, celular)\n[8-15s] Wipe transition → render profissional gerado pela IA\n[15-25s] Screen recording: formulário simples do app\n[25-35s] Barra de progresso — Gerando...\n[35-50s] Galeria de projetos criados\n[50-63s] Logo IMovie + CTA animado\n\n## Ângulos de Campanha\n- economia: Gastei R$0 em edição de vídeo esse mês | Corretor autônomo\n- velocidade: Vídeo profissional em 5 minutos | Imobiliária\n- resultado: Esse imóvel vendeu em 3 dias com esse vídeo | Todo corretor\n- tutorial: Como criar seu primeiro vídeo no IMovie | Iniciantes\n- comparacao: Antes foto feia. Depois vídeo cinematográfico | Amplo\n- autoridade: O app que corretores profissionais estão usando | Aspiracional\n\n## Hashtags\n#CorretoDeImóveis #VideoImobiliário #ImovelDigital #MarketingImobiliário #InteligenciaArtificial #iMobCreator #IMovie #VídeoComIA #CorretoraDigital #ImóveisComIA #VideoProfissional #SemEdição\n\n## Trilha\nCorporativo/Tecnológico ou Épico/Cinematográfico — Apple-style. Tom: confiante, inovador, sofisticado.`;\n\nconst systemPrompt = `Você é um especialista em marketing de conteúdo para o mercado imobiliário brasileiro.\\nUse a skill abaixo como base para gerar conteúdo de alta conversão para o IMovie / iMobCreator.\\n\\n${SKILL}\\n\\nResponda APENAS em JSON válido sem markdown nem blocos de código. Estrutura obrigatória:\\n{\\n  \"roteiro_cenas\": [{\"timecode\": \"0-2s\", \"elemento\": \"...\", \"descricao\": \"...\"}],\\n  \"script_narracao\": \"texto completo da narração em voz off\",\\n  \"legenda_post\": \"texto completo da legenda com emojis pronta para colar\",\\n  \"hashtags\": [\"#tag1\", \"#tag2\"],\\n  \"trilha_sugestao\": \"descrição do estilo musical\",\\n  \"cta_final\": \"texto exato do CTA\",\\n  \"hook_principal\": \"frase de abertura de alto impacto\",\\n  \"angulo_escolhido\": \"nome do ângulo utilizado\"\\n}`;\n\nconst anguloTexto = angulo\n  ? `Ângulo de campanha obrigatório: ${angulo}`\n  : 'Ângulo: escolha o mais adequado para máxima conversão com o público deste formato';\nconst imagensTexto = descricaoImagens\n  ? `\\nImagens disponíveis para adaptar o roteiro: ${descricaoImagens}`\n  : '';\n\nconst userPrompt = `Gere um pacote completo de conteúdo IMovie:\\n- Formato: ${FORMATO_LABELS[formato] || formato}\\n- Tom: ${TOM_LABELS[tom] || tom}\\n- Nicho do imóvel: ${NICHO_LABELS[nichoImovel] || nichoImovel}\\n- ${anguloTexto}${imagensTexto}\\n\\nEntregue roteiro de cenas com timecodes adaptado ao formato, script de narração no tom correto, legenda pronta com emojis, hashtags segmentadas, sugestão de trilha e CTA de alta conversão. Tudo em português do Brasil.`;\n\nreturn [{\n  json: {\n    model: 'claude-sonnet-4-20250514',\n    max_tokens: 3000,\n    system: systemPrompt,\n    user: userPrompt,\n    callback_url: callbackUrl,\n    job_id: jobId,\n    formato,\n    tom,\n    nicho_imovel: nichoImovel\n  }\n}];"
+      }
+    },
+    {
+      "id": "claude-gerar",
+      "name": "Claude: Gerar Pacote",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        480,
+        460
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"model\": \"{{ $json.model }}\", \"max_tokens\": {{ $json.max_tokens }}, \"system\": {{ JSON.stringify($json.system) }}, \"messages\": [{\"role\": \"user\", \"content\": {{ JSON.stringify($json.user) }}}]}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "JDwN8QIAXHuc6hQd",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "id": "code-parsear",
+      "name": "Code: Parsear Pacote",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        460
+      ],
+      "parameters": {
+        "jsCode": "const claudeResp = $input.item.json;\nconst promptCtx = $('Code: Montar Prompt').item.json;\n\nconst rawText = claudeResp?.content?.[0]?.text || '';\n\nlet pacote = {};\ntry {\n  pacote = JSON.parse(rawText);\n} catch(e) {\n  const match = rawText.match(/\\{[\\s\\S]*\\}/);\n  if (match) {\n    try { pacote = JSON.parse(match[0]); } catch(_) { pacote = { raw: rawText }; }\n  } else {\n    pacote = { raw: rawText };\n  }\n}\n\nconst usage = claudeResp?.usage || {};\n\nreturn [{\n  json: {\n    status: 'completed',\n    job_id: promptCtx.job_id,\n    formato: promptCtx.formato,\n    tom: promptCtx.tom,\n    nicho_imovel: promptCtx.nicho_imovel,\n    pacote,\n    tokens_input: usage.input_tokens || 0,\n    tokens_output: usage.output_tokens || 0,\n    callback_url: promptCtx.callback_url,\n    generated_at: new Date().toISOString()\n  }\n}];"
+      }
+    },
+    {
+      "id": "if-callback",
+      "name": "IF: Tem Callback URL?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        960,
+        460
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.callback_url }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "http-callback",
+      "name": "HTTP: Enviar Resultado ao Caller",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1200,
+        320
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.callback_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-n8n-token",
+              "value": "={{ $env.N8N_WEBHOOK_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "noop-concluido",
+      "name": "Sem Callback — Concluído",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        600
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "code-erro",
+      "name": "Code: Tratar Erro",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        660
+      ],
+      "parameters": {
+        "jsCode": "const err = $input.item.json;\nconsole.error('[imovie-reel-creator] Erro Claude:', JSON.stringify(err));\nreturn [{ json: { status: 'error', error: String(err.message || JSON.stringify(err)), timestamp: new Date().toISOString() } }];"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook: Receber Solicitação": {
+      "main": [
+        [
+          {
+            "node": "Resposta 202 Aceito",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code: Montar Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Montar Prompt": {
+      "main": [
+        [
+          {
+            "node": "Claude: Gerar Pacote",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude: Gerar Pacote": {
+      "main": [
+        [
+          {
+            "node": "Code: Parsear Pacote",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "Code: Tratar Erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Parsear Pacote": {
+      "main": [
+        [
+          {
+            "node": "IF: Tem Callback URL?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Tem Callback URL?": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Enviar Resultado ao Caller",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sem Callback — Concluído",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "any",
+    "availableInMCP": true,
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed"
+  }
+}
