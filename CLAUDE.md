@@ -237,7 +237,7 @@ DB8_AGENT_URL=https://api.db8intelligence.com.br
 
 # App
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_APP_NAME=NexoPro
+NEXT_PUBLIC_APP_NAME=NexoOmnix
 
 # Stripe (Fase 8)
 # STRIPE_SECRET_KEY=
@@ -261,10 +261,15 @@ type Niche =
   | 'juridico'    // Advocacia / Cartorio
   | 'pet'         // Veterinario / Pet Shop
   | 'educacao'    // Educacao / Idiomas / Cursos
-  | 'nutricao'    // Nutricao / Fitness / Personal
+  | 'nutricao'    // Nutricao / Personal Trainer
   | 'engenharia'  // Engenharia / Arquitetura
   | 'fotografia'  // Fotografia / Video / Producao
+  | 'gastronomia' // Restaurante / Bar / Delivery (add migration 010)
+  | 'fitness'     // Academia / Crossfit / Fitness (add migration 010)
+  | 'financas'    // Contabilidade / Consultoria Financeira (add migration 010)
 ```
+
+Constraint no banco: `tenants_niche_check` em [migration 010](supabase/migrations/010_talking_objects_addon.sql#L16-L22).
 
 Config em: `src/lib/niche-config.ts`
 
@@ -278,8 +283,14 @@ starter    -> R$ 99/mes — ate 100 clientes, agenda basica, financeiro simples
 pro        -> R$199/mes — ilimitado, financeiro completo, site publico, 10 posts IA/mes
 pro_plus   -> R$349/mes — tudo pro + ContentAI ilimitado, talking objects,
                           NFS-e, DAS/ISS automatico, DRE, Agente IA 24h
-enterprise -> R$699/mes — tudo pro_plus + multi-usuarios (ate 10), API, gerente dedicado
+pro_max    -> R$499/mes — tudo pro_plus + Meta API autopost, Reel Analyzer,
+                          Social Hub multi-conta, agente avancado
+enterprise -> R$699/mes — tudo pro_max + multi-usuarios (ate 10), API, gerente dedicado
 ```
+
+**Add-ons (Stripe sub separada, qualquer plano):**
+
+- Talking Objects: `tenants.addon_talking_objects` (migration 010)
 
 Regra critica: verificar tenant.plan antes de renderizar features.
 Usar isPlanAtLeast('pro_plus') de hooks/useAuth.ts.
@@ -299,18 +310,29 @@ export const CONTENT_PLAN_LIMITS = {
 
 ## 🗄️ BANCO DE DADOS — TODAS AS TABELAS
 
-### ✅ PRODUÇÃO — migrations 001-007 aplicadas (008 pendente de push) (pclqjwegljrglaslppag)
+### 🗃️ LOCAL — migrations 001–013 criadas (pclqjwegljrglaslppag)
+
+⚠️ **Status de prod desconhecido** — última confirmação foi migration 007. Migrations 008–013 precisam validação de aplicação em produção (ver Sprint 1 do plano).
+
 ```
-Core multi-tenant:    tenants · profiles · tenant_settings · tenant_modules
-Operacional:          clients · services · appointments · documents
-Financeiro/Contabil:  contas_bancarias · categorias_financeiras · transactions
-                      notas_fiscais · obrigacoes_fiscais · relatorios_contabeis
-Redes Sociais:        social_profiles · social_content · editorial_calendar · media_library
-ContentAI:            content_projects
-Imob:                 properties · property_media · brand_templates
-Estoque/Cursos:       products · courses · course_enrollments
-Sistema:              notifications · activity_logs
-Total: 27 tabelas com RLS ativo
+Core multi-tenant:     tenants · profiles · tenant_settings · tenant_modules
+Operacional:           clients · services · appointments · documents
+Financeiro/Contabil:   contas_bancarias · categorias_financeiras · transactions
+                       notas_fiscais · obrigacoes_fiscais · relatorios_contabeis
+Redes Sociais:         social_profiles · social_content · editorial_calendar · media_library
+ContentAI:             content_projects
+Imob:                  properties · property_media · brand_templates
+Estoque/Cursos:        products · courses · course_enrollments
+Sistema:               notifications · activity_logs
+─── pós-migration 007 ───
+Content Personas (008): tenant_settings.content_persona_id
+Meta Autopost (009):    social_media_connections · scheduled_posts
+Talking Objects (010):  tenants.addon_talking_objects + novos nichos
+Branding (011):         tenant_settings.branding_*
+Agent Skills (012):     agent_skills · skill_generation_log
+CRM Pipeline (013):     crm_pipelines · crm_stages · crm_deals
+                        crm_deal_channels · crm_activities
+                        crm_messages · crm_message_templates
 ```
 
 ### A criar — 004_imob_module.sql (Fase 6) ✅ APLICADA
@@ -746,7 +768,37 @@ git push origin main           # Vercel deploy automatico
 ```
 
 TODAS AS FASES 1-10 CONCLUIDAS. 52 paginas em producao, build limpo.
-PROXIMA: configurar dominios customizados no Vercel (imobpro.app, salaopro.app, reelcreator.app) e aplicar migrations no Supabase producao.
+
+### FASE 11 — POST-LAUNCH FEATURES (em desenvolvimento)
+
+Features construídas depois do fechamento da FASE 10, ainda não deployadas em prod:
+
+```text
+✅ ReelCreator AI completo — Fal.ai imagens + OpenAI TTS + Replicate SadTalker lip-sync + FFmpeg.wasm assembly
+✅ Photo Object mode — personagem 3D Pixar/Disney escolhível
+✅ Reference image library — biblioteca de estilos visuais
+✅ PRO MAX plan — Meta API autopost + Reel Analyzer + Social Hub
+✅ Content Personas (migration 008) — persona de IA persistente por tenant
+✅ Meta Autopost (migration 009) — social_media_connections + scheduled_posts
+✅ Talking Objects add-on (migration 010) — produto separado + nichos gastronomia/fitness/financas
+✅ Branding Profile wizard (migration 011) — perfil de marca reutilizado em todos os prompts
+✅ Agent Skills Factory (migration 012) — 7 agentes IA + skills por nicho + workflows n8n
+✅ Omnix CRM 3 variantes (migration 013) — vendas, imobiliario, atendimento + Kanban drag & drop
+✅ Rotas novas: /admin/skills, /crm, /cursos, /estoque, /reel-creator
+✅ APIs novas: /api/branding, /api/crm, /api/meta, /api/reel-creator, /api/skills
+```
+
+### SPRINT 1 — PATH TO REVENUE (em andamento)
+
+```text
+⬜ Mergear branch atual em main via PR
+⬜ Aplicar migrations 008-013 em Supabase producao
+⬜ Configurar dominios customizados no Vercel (imobpro.app, salaopro.app, reelcreator.app)
+⬜ Validar Stripe Live (webhook, price IDs, checkout real)
+⬜ Validar Resend (email transacional)
+⬜ Smoke test end-to-end: cadastro → trial → checkout → login → feature Pro
+⬜ Resolver 11 vulnerabilidades Dependabot (6 high, 5 moderate)
+```
 
 ---
 
