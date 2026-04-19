@@ -19,14 +19,13 @@ Posicionamento: **"Plataforma completa para criar, automatizar e escalar o marke
 
 Cada cliente (tenant) tem instância isolada com módulos do seu nicho.
 
-### Produtos neste repositório (1 codebase, múltiplos domínios Vercel)
-| Domínio | Nicho padrão | Produto |
-|---------|-------------|---------|
-| nexoomnix.com | all | Plataforma completa (domínio principal) |
-| nexopro.app | all | Alias legacy |
-| imobpro.app | imoveis | iMobCreator mode |
-| reelcreator.app | content-ai | Omnix Reels mode |
-| salaopro.app | beleza | Salão Pro mode |
+### Domínio único
+
+**Só existe um domínio: [nexoomnix.com](https://nexoomnix.com)**
+
+Toda a plataforma, todos os nichos, todas as landing pages e todas as features vivem sob a árvore de `nexoomnix.com`. Landing pages por nicho são rotas (`/reelcreator`, `/salaopro`, etc.), não domínios separados.
+
+> ⚠️ **Nota histórica:** versões anteriores deste CLAUDE.md mencionavam domínios alternativos (imobpro.app, salaopro.app, reelcreator.app, nexopro.app) como parte de uma arquitetura multi-domínio. **Esses domínios nunca foram registrados e foram descartados.** O código em `src/lib/domain-config.ts` e o middleware de detecção de hostname são **legacy não utilizados** — podem ser removidos quando oportuno.
 
 ---
 
@@ -551,7 +550,7 @@ Funcao setupTenant() em src/hooks/useAuth.ts — EXISTE.
 
 ## 🌐 SITE PUBLICO DOS CLIENTES
 
-Rota: nexopro.app/s/[slug] (publica — nunca exigir login)
+Rota: nexoomnix.com/s/[slug] (publica — nunca exigir login)
 Exibe: hero, servicos, galeria, depoimentos, botao de agendamento.
 Config em: tenant_settings (campos site_*)
 
@@ -653,7 +652,7 @@ git push origin main           # Vercel deploy automatico
 
 ```
 ✅ 10 landing pages de nicho (salaopro, ordemdeservico, clinicapro, imobpro, juridicpro, petpro, educapro, nutripro, engepro, fotopro)
-✅ NexoProLanding (landing page principal nexopro.app)
+✅ NexoOmnixLanding (landing page principal de nexoomnix.com)
 ✅ Middleware: rotas públicas de todas as landing pages
 ```
 
@@ -705,14 +704,15 @@ git push origin main           # Vercel deploy automatico
 ✅ Vars Stripe + Resend no .env.example
 ```
 
-### FASE 9 — MULTI-DOMINIO ✅ 100%
+### FASE 9 — MULTI-DOMINIO ❌ DESCARTADA
 
-```
-✅ src/lib/domain-config.ts (DOMAIN_MAP: imobpro.app, salaopro.app, reelcreator.app)
-✅ Middleware expandido: detecção de hostname → cookie x-nexopro-niche → redirect para landing do nicho
-✅ app/page.tsx: NexoProLanding para visitantes não-autenticados
-✅ PUBLIC_ROUTES inclui todas as landing pages e /api/webhooks
-⬜ Vercel: configurar domínios imobpro.app, reelcreator.app, salaopro.app (deploy)
+Fase planejada de suporte a múltiplos domínios (imobpro.app, salaopro.app, reelcreator.app). **Os domínios nunca foram registrados e a arquitetura foi descartada.** Plataforma opera sob domínio único `nexoomnix.com`.
+
+Código remanescente não utilizado:
+
+```text
+src/lib/domain-config.ts                  — DOMAIN_MAP órfão, remover
+src/middleware.ts (detecção hostname)     — simplificar, remover multi-domain
 ```
 
 ### FASE 10 — DEPLOY E ESCALA ✅ 100%
@@ -750,15 +750,12 @@ git push origin main           # Vercel deploy automatico
    - ELEVENLABS_API_KEY
    - DB8_AGENT_URL=https://api.db8intelligence.com.br
    - N8N_WEBHOOK_TOKEN
-   - NEXT_PUBLIC_APP_URL=https://nexopro.app
+   - NEXT_PUBLIC_APP_URL=https://nexoomnix.com
 
-2. Domínios customizados no Vercel:
-   - nexopro.app → projeto principal
-   - imobpro.app → mesmo projeto (middleware detecta)
-   - salaopro.app → mesmo projeto
-   - reelcreator.app → mesmo projeto
+2. Domínio customizado no Vercel:
+   - nexoomnix.com → projeto principal (único domínio real)
 
-3. Stripe Webhook: registrar https://nexopro.app/api/webhooks/stripe
+3. Stripe Webhook: registrar https://nexoomnix.com/api/webhooks/stripe
    Eventos: checkout.session.completed, customer.subscription.updated/deleted, invoice.payment_failed
 
 4. Supabase: aplicar migrations 001 → 006 em produção
@@ -793,7 +790,7 @@ Features construídas depois do fechamento da FASE 10, ainda não deployadas em 
 ```text
 ⬜ Mergear branch atual em main via PR
 ⬜ Aplicar migrations 008-013 em Supabase producao
-⬜ Configurar dominios customizados no Vercel (imobpro.app, salaopro.app, reelcreator.app)
+✅ Domínio customizado no Vercel: nexoomnix.com (único domínio — multi-domain descartado)
 ⬜ Validar Stripe Live (webhook, price IDs, checkout real)
 ⬜ Validar Resend (email transacional)
 ⬜ Smoke test end-to-end: cadastro → trial → checkout → login → feature Pro
