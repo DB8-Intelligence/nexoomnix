@@ -1,6 +1,14 @@
-export function buildAnalysisPrompt(source: string, nicho: string): string {
-  return `Você é um especialista em marketing digital para o nicho de ${nicho} no Brasil.
+import type { BrandingContext } from './branding-context'
+import { formatBrandingBlock } from './branding-context'
 
+export function buildAnalysisPrompt(
+  source: string,
+  nicho: string,
+  branding?: BrandingContext | null,
+): string {
+  const brandingBlock = formatBrandingBlock(branding ?? null)
+
+  return `Você é um especialista em marketing digital para o nicho de ${nicho} no Brasil.${brandingBlock}
 Analise a seguinte descrição de negócio/conteúdo e crie um plano de conteúdo para redes sociais:
 
 ${source}
@@ -21,21 +29,29 @@ Retorne um JSON com esta estrutura exata (sem markdown, apenas JSON puro):
   ]
 }
 
-Os image_prompts devem ser detalhados e em inglês, adequados para geração por IA (Flux/SDXL), no estilo fotorrealístico ou 3D dependendo do nicho.`
+Os image_prompts devem ser detalhados e em inglês, adequados para geração por IA (Flux/SDXL), no estilo fotorrealístico ou 3D dependendo do nicho.${
+    branding?.colors
+      ? ` Incorpore a paleta "${branding.colors}" nas descrições visuais quando couber.`
+      : ''
+  }`
 }
 
 export function buildPackagePrompt(
   analysis: { title: string; hook: string; cta: string; key_messages: string[]; tone: string },
   nicho: string,
-  tenantName: string
+  tenantName: string,
+  branding?: BrandingContext | null,
 ): string {
-  return `Você é um copywriter especialista em marketing para ${nicho} no Brasil.
+  const brandingBlock = formatBrandingBlock(branding ?? null)
+  // Se o branding define um tom, ele tem prioridade sobre o tom detectado na análise.
+  const effectiveTone = branding?.tone ?? analysis.tone
 
+  return `Você é um copywriter especialista em marketing para ${nicho} no Brasil.${brandingBlock}
 Com base nesta análise de conteúdo:
 - Título: ${analysis.title}
 - Hook: ${analysis.hook}
 - Mensagens-chave: ${analysis.key_messages.join(', ')}
-- Tom: ${analysis.tone}
+- Tom: ${effectiveTone}
 - CTA: ${analysis.cta}
 - Negócio: ${tenantName}
 
@@ -50,6 +66,10 @@ Crie o pacote de texto completo para redes sociais. Retorne JSON puro (sem markd
   ]
 }
 
-A legenda deve ser envolvente, usar emojis estrategicamente, ter linha de abertura impactante e terminar com chamada para ação.
+A legenda deve ser envolvente, usar emojis estrategicamente, ter linha de abertura impactante e terminar com chamada para ação.${
+    branding?.phrase
+      ? ` Quando fizer sentido, encaixe naturalmente a frase-marca "${branding.phrase}".`
+      : ''
+  }
 Os hashtags devem ser relevantes para o nicho ${nicho} e misturar populares com nichados.`
 }

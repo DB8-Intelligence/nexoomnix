@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { buildPackagePrompt } from '@/lib/content-ai/prompts'
+import { loadBrandingContext } from '@/lib/content-ai/branding-context'
 import type { ContentAnalysis, ContentCTA } from '@/types/database'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
   }
 
-  // Get tenant name
+  // Get tenant name + branding
   const { data: profile } = await supabase
     .from('profiles')
     .select('tenant_id')
@@ -47,6 +48,7 @@ export async function POST(req: NextRequest) {
       .single()
     tenantName = tenant?.name ?? tenantName
   }
+  const branding = await loadBrandingContext(supabase, profile?.tenant_id)
 
   const analysis = project.analysis as ContentAnalysis
   if (!analysis) return NextResponse.json({ error: 'Projeto sem análise. Execute a análise primeiro.' }, { status: 400 })
@@ -55,7 +57,7 @@ export async function POST(req: NextRequest) {
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
-      messages: [{ role: 'user', content: buildPackagePrompt(analysis, project.nicho ?? 'negócio', tenantName) }],
+      messages: [{ role: 'user', content: buildPackagePrompt(analysis, project.nicho ?? 'negócio', tenantName, branding) }],
     })
 
     const text = message.content[0].type === 'text' ? message.content[0].text : ''

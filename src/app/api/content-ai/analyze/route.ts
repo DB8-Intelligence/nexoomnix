@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { buildAnalysisPrompt } from '@/lib/content-ai/prompts'
+import { loadBrandingContext } from '@/lib/content-ai/branding-context'
 import type { ContentAnalysis } from '@/types/database'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -47,11 +48,19 @@ export async function POST(req: NextRequest) {
     .update({ status: 'analyzing' })
     .eq('id', project_id)
 
+  // Load branding for this tenant (respects RLS via user session)
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('tenant_id')
+    .eq('id', user.id)
+    .single()
+  const branding = await loadBrandingContext(supabase, profile?.tenant_id)
+
   try {
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1500,
-      messages: [{ role: 'user', content: buildAnalysisPrompt(source, nicho) }],
+      messages: [{ role: 'user', content: buildAnalysisPrompt(source, nicho, branding) }],
     })
 
     const text = message.content[0].type === 'text' ? message.content[0].text : ''

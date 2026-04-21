@@ -5,6 +5,7 @@ import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { DashboardShell } from '@/components/dashboard/DashboardShell'
 import { PRODUCT_MODE_COOKIE } from '@/lib/domain-config'
+import { isDb8Staff } from '@/lib/staff'
 
 export default async function DashboardLayout({
   children,
@@ -32,8 +33,10 @@ export default async function DashboardLayout({
   const cookieStore = await cookies()
   const productMode = cookieStore.get(PRODUCT_MODE_COOKIE)?.value ?? 'nexoomnix'
 
+  const isStaff = isDb8Staff(user.email)
+
   return (
-    <DashboardShell tenant={tenant} profile={profile} productMode={productMode}>
+    <DashboardShell tenant={tenant} profile={profile} productMode={productMode} isStaff={isStaff}>
       {children}
     </DashboardShell>
   )
