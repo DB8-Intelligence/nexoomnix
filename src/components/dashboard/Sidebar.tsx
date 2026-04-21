@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import {
   Zap, Calendar, Users, DollarSign, BarChart3, FileText,
   Share2, Globe, Bot, Bell, Settings, X, ChevronRight,
-  ClipboardList, Home, BookOpen, Package, Sparkles, CreditCard, PieChart, Film, FlaskConical, Kanban
+  ClipboardList, Home, BookOpen, Package, Sparkles, CreditCard, PieChart, Film, FlaskConical, Kanban, Bug
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getNicheConfig } from '@/lib/niche-config'
@@ -184,21 +184,36 @@ export function Sidebar({ tenant, open, onClose, productMode = 'nexoomnix', isSt
 
       {/* Bottom actions */}
       <div className="px-3 py-4 border-t border-gray-100 space-y-0.5">
-        {/* Skills Factory: painel admin DB8, invisível pro cliente final */}
+        {/* Admin DB8 — invisível pro cliente final */}
         {isStaff && (
-          <Link
-            href="/admin/skills"
-            className={cn(
-              'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
-              pathname.startsWith('/admin/skills')
-                ? 'bg-violet-50 text-violet-700'
-                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-            )}
-          >
-            <FlaskConical className="w-4 h-4 flex-shrink-0" />
-            Skills Factory
-            <span className="ml-auto text-xs bg-violet-100 text-violet-600 px-1.5 py-0.5 rounded-md font-medium">ADMIN</span>
-          </Link>
+          <>
+            <Link
+              href="/admin/skills"
+              className={cn(
+                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
+                pathname.startsWith('/admin/skills')
+                  ? 'bg-violet-50 text-violet-700'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              )}
+            >
+              <FlaskConical className="w-4 h-4 flex-shrink-0" />
+              Skills Factory
+              <span className="ml-auto text-xs bg-violet-100 text-violet-600 px-1.5 py-0.5 rounded-md font-medium">ADMIN</span>
+            </Link>
+            <Link
+              href="/admin/bugs"
+              className={cn(
+                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
+                pathname.startsWith('/admin/bugs')
+                  ? 'bg-red-50 text-red-700'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              )}
+            >
+              <Bug className="w-4 h-4 flex-shrink-0" />
+              Bug Reports
+              <span className="ml-auto text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded-md font-medium">ADMIN</span>
+            </Link>
+          </>
         )}
         <Link
           href="/assinatura"
