@@ -1,6 +1,41 @@
 import type { BrandingContext } from './branding-context'
 import { formatBrandingBlock } from './branding-context'
 
+// Prompt one-shot pro autopilot: recebe só nicho + topic hint + branding,
+// devolve um post pronto pra publicar (texto + conceito visual).
+// Evita 2 chamadas separadas (analyze + package) usadas pelo wizard manual.
+export function buildAutopilotPostPrompt(
+  nicho: string,
+  tenantName: string,
+  topicHint: string | null,
+  branding?: BrandingContext | null,
+): string {
+  const brandingBlock = formatBrandingBlock(branding ?? null)
+  const topicLine = topicHint?.trim()
+    ? `Tema/ângulo do post: ${topicHint.trim()}`
+    : 'Escolha um tema relevante e atual para o nicho. Evite repetir temas óbvios.'
+
+  return `Você é um copywriter sênior de redes sociais para o nicho de ${nicho} no Brasil, trabalhando para ${tenantName}.${brandingBlock}
+Gere UM post de Instagram completo e pronto pra publicar.
+
+${topicLine}
+
+Retorne JSON puro (sem markdown):
+{
+  "title": "título curto interno para identificar o post (máx 60 chars)",
+  "post_text": "texto curto e impactante para feed (máx 150 chars, sem hashtags)",
+  "caption": "legenda completa (máx 2200 chars, com emojis, quebras de linha, hashtags no final)",
+  "hashtags": ["#h1", "#h2", "#h3", "#h4", "#h5", "#h6", "#h7", "#h8"],
+  "ctas": [
+    { "text": "texto curto CTA", "type": "whatsapp", "value": "" },
+    { "text": "texto curto CTA", "type": "link", "value": "" }
+  ],
+  "image_concept": "descrição em inglês de 1 imagem de capa (para Flux/SDXL), fotorrealística e alinhada ao nicho"
+}
+
+A legenda deve ter abertura impactante, entregar valor concreto e terminar com CTA. Misture hashtags populares e nichadas.`
+}
+
 export function buildAnalysisPrompt(
   source: string,
   nicho: string,
