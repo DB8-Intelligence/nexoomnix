@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Loader2, Plus, Trash2, Eye, EyeOff, ImageIcon, Link as LinkIcon, Upload } from 'lucide-react'
+import { CanvaImportButton } from './CanvaImportButton'
 
 type Format = 'feed' | 'story' | 'reel_cover'
 type Source = 'upload' | 'canva' | 'external'
@@ -139,7 +140,7 @@ export function ContentTemplateGallery() {
             Backgrounds reutilizáveis pros seus posts. Salve uma vez, a IA usa no autopilot.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <select
             title="Filtrar por formato"
             value={filterFormat}
@@ -151,6 +152,7 @@ export function ContentTemplateGallery() {
             <option value="story">Story</option>
             <option value="reel_cover">Capa de Reel</option>
           </select>
+          <CanvaImportButton onImported={load} />
           {!showForm && (
             <button
               type="button"

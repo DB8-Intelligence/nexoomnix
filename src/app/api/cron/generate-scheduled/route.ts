@@ -1,18 +1,21 @@
-// Vercel Cron worker — autopilot de ideação.
+// Vercel Cron worker — autopilot end-to-end.
 //
-// Roda uma vez por dia (vercel.json). Pra cada content_schedule ativo com
-// next_run_at <= now(), gera UM rascunho de post com branding injetado e
-// cria um content_project status='draft' pro tenant revisar.
+// Roda diariamente. Pra cada content_schedule ativo com next_run_at <= now(),
+// gera UM post completo (texto + imagem composta) e, se o tenant tiver
+// template no pool + Meta connection ativa, já cria o scheduled_post pronto
+// pra ser publicado pelo /api/cron/publish-scheduled no slot calculado.
 //
-// A publicação automática (imagem + scheduled_post) fica pra Sprint C,
-// quando existir biblioteca de templates visuais. Por ora este worker só
-// entrega texto + image_concept, e o tenant completa o ciclo manualmente.
+// Quando falta template OU Meta connection, o fluxo cai pra rascunho —
+// content_project status='draft', tenant recebe notificação, completa
+// manualmente.
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { buildAutopilotPostPrompt } from '@/lib/content-ai/prompts'
 import { loadBrandingContext } from '@/lib/content-ai/branding-context'
+import { composePostUrl } from '@/lib/content-ai/compose-url'
+import { toZonedTime, fromZonedTime } from 'date-fns-tz'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
@@ -33,6 +36,21 @@ interface ScheduleRow {
   topic_hint: string | null
   frequency: string
   template_ids: string[] | null
+  hour_of_day: number
+  timezone: string
+}
+
+// Calcula o próximo timestamp UTC correspondente a `hour:00` no `timezone`.
+// Se o horário já passou hoje, pula pra amanhã.
+function nextSlotUtc(hour: number, timezone: string): Date {
+  const nowUtc = new Date()
+  const nowLocal = toZonedTime(nowUtc, timezone)
+  const slotLocal = new Date(nowLocal)
+  slotLocal.setHours(hour, 0, 0, 0)
+  if (slotLocal.getTime() <= nowLocal.getTime()) {
+    slotLocal.setDate(slotLocal.getDate() + 1)
+  }
+  return fromZonedTime(slotLocal, timezone)
 }
 
 interface GeneratedPost {
@@ -57,7 +75,7 @@ async function generateOneDraft(
   supabase: SupabaseClient,
   anthropic: Anthropic,
   schedule: ScheduleRow,
-): Promise<{ ok: boolean; message?: string; projectId?: string }> {
+): Promise<{ ok: boolean; message?: string; projectId?: string; scheduledPostId?: string | null }> {
   const { data: tenant } = await supabase
     .from('tenants')
     .select('name, niche')
@@ -146,17 +164,78 @@ async function generateOneDraft(
     return { ok: false, message: projError?.message ?? 'Falha ao criar content_project' }
   }
 
+  // Tentar fechar o loop autopilot: se tem template + Meta connection ativa,
+  // cria o scheduled_post já agendado pro próximo slot.
+  let scheduledPostId: string | null = null
+  if (pickedTemplateUrl) {
+    const { data: connection } = await supabase
+      .from('social_media_connections')
+      .select('id')
+      .eq('tenant_id', schedule.tenant_id)
+      .eq('is_active', true)
+      .order('last_used_at', { ascending: false, nullsFirst: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (connection) {
+      const slot = nextSlotUtc(schedule.hour_of_day, schedule.timezone)
+      const composedUrl = composePostUrl({
+        bg:     pickedTemplateUrl,
+        text:   generated.post_text,
+        cta:    generated.ctas[0]?.text,
+        brand:  tenant.name,
+        color:  null,
+        format: 'feed',
+      })
+
+      const fullCaption = generated.hashtags.length
+        ? `${generated.caption}\n\n${generated.hashtags.join(' ')}`
+        : generated.caption
+
+      const { data: scheduledPost } = await supabase
+        .from('scheduled_posts')
+        .insert({
+          tenant_id:     schedule.tenant_id,
+          user_id:       schedule.user_id,
+          connection_id: connection.id,
+          caption:       fullCaption,
+          media_urls:    [composedUrl],
+          media_type:    'image',
+          hashtags:      generated.hashtags,
+          status:        'scheduled',
+          scheduled_for: slot.toISOString(),
+        })
+        .select('id')
+        .single()
+
+      if (scheduledPost) {
+        scheduledPostId = scheduledPost.id
+        await supabase
+          .from('content_projects')
+          .update({ status: 'scheduled' })
+          .eq('id', project.id)
+      }
+    }
+  }
+
   // Notifica o tenant
+  const notificationTitle = scheduledPostId
+    ? 'Post agendado automaticamente'
+    : 'Novo rascunho de post pronto'
+  const notificationMsg = scheduledPostId
+    ? `"${generated.title}" — será publicado automaticamente. Cancele/edite se precisar.`
+    : `"${generated.title}" — do schedule "${schedule.name}". Revise e publique.`
+
   await supabase.from('notifications').insert({
     tenant_id:  schedule.tenant_id,
     profile_id: schedule.user_id,
-    title:      'Novo rascunho de post pronto',
-    message:    `"${generated.title}" — do schedule "${schedule.name}". Revise e publique.`,
+    title:      notificationTitle,
+    message:    notificationMsg,
     type:       'ia',
     link:       `/conteudo/${project.id}`,
   })
 
-  return { ok: true, projectId: project.id }
+  return { ok: true, projectId: project.id, scheduledPostId }
 }
 
 export async function GET(req: NextRequest) {
@@ -176,7 +255,7 @@ export async function GET(req: NextRequest) {
 
   const { data: due, error } = await supabase
     .from('content_schedules')
-    .select('id, tenant_id, user_id, name, topic_hint, frequency, template_ids')
+    .select('id, tenant_id, user_id, name, topic_hint, frequency, template_ids, hour_of_day, timezone')
     .eq('is_active', true)
     .lte('next_run_at', nowIso)
     .limit(30)
@@ -184,7 +263,7 @@ export async function GET(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   const schedules = (due ?? []) as ScheduleRow[]
-  const results: { id: string; ok: boolean; message?: string; projectId?: string }[] = []
+  const results: { id: string; ok: boolean; message?: string; projectId?: string; scheduledPostId?: string | null }[] = []
 
   for (const schedule of schedules) {
     try {
