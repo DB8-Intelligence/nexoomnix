@@ -1,32 +1,45 @@
 'use client'
 
 import { useState } from 'react'
-import { Link, FileText, ArrowRight } from 'lucide-react'
+import { Link, FileText, ArrowRight, Pencil } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NICHO_OPTIONS = [
-  { value: 'imoveis', label: 'Imóveis' },
-  { value: 'beleza', label: 'Beleza & Estética' },
-  { value: 'saude', label: 'Saúde & Clínica' },
-  { value: 'juridico', label: 'Jurídico' },
-  { value: 'tecnico', label: 'Serviços Técnicos' },
-  { value: 'pet', label: 'Pet & Veterinário' },
-  { value: 'educacao', label: 'Educação' },
-  { value: 'nutricao', label: 'Nutrição & Fitness' },
-  { value: 'engenharia', label: 'Engenharia & Arquitetura' },
-  { value: 'fotografia', label: 'Fotografia & Vídeo' },
+  { value: 'imoveis',     label: 'Imóveis' },
+  { value: 'beleza',      label: 'Beleza & Estética' },
+  { value: 'saude',       label: 'Saúde & Clínica' },
+  { value: 'juridico',    label: 'Jurídico' },
+  { value: 'tecnico',     label: 'Serviços Técnicos' },
+  { value: 'pet',         label: 'Pet & Veterinário' },
+  { value: 'educacao',    label: 'Educação' },
+  { value: 'nutricao',    label: 'Nutrição & Fitness' },
+  { value: 'engenharia',  label: 'Engenharia & Arquitetura' },
+  { value: 'fotografia',  label: 'Fotografia & Vídeo' },
+  { value: 'gastronomia', label: 'Gastronomia' },
+  { value: 'fitness',     label: 'Fitness & Academia' },
+  { value: 'financas',    label: 'Finanças & Contabilidade' },
 ]
+
+function nicheLabel(value: string): string {
+  return NICHO_OPTIONS.find(o => o.value === value)?.label ?? value
+}
 
 interface LinkInputProps {
   onSubmit: (data: { nicho: string; source_url?: string; source_description?: string }) => Promise<void>
   loading?: boolean
+  /** Nicho do tenant já conhecido. Se fornecido, pula a seleção e usa-o por padrão. */
+  defaultNiche?: string
+  /** Nome do negócio — usado pra personalizar a headline. */
+  tenantName?: string
 }
 
-export function LinkInput({ onSubmit, loading = false }: LinkInputProps) {
+export function LinkInput({ onSubmit, loading = false, defaultNiche, tenantName }: LinkInputProps) {
   const [mode, setMode] = useState<'url' | 'text'>('text')
-  const [nicho, setNicho] = useState('')
+  const [nicho, setNicho] = useState(defaultNiche ?? '')
   const [sourceUrl, setSourceUrl] = useState('')
   const [sourceDescription, setSourceDescription] = useState('')
+  // Quando o tenant já tem nicho, só abre o picker se o user clicar "Trocar".
+  const [showNichePicker, setShowNichePicker] = useState(!defaultNiche)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -43,32 +56,61 @@ export function LinkInput({ onSubmit, loading = false }: LinkInputProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-xl">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">Criar conteúdo com IA</h2>
+        <h2 className="text-lg font-semibold text-gray-900">
+          {tenantName ? `Criar conteúdo pra ${tenantName}` : 'Criar conteúdo com IA'}
+        </h2>
         <p className="text-sm text-gray-500 mt-0.5">
-          Informe sobre o que é o conteúdo e a IA cria legenda, imagens e roteiro.
+          Descreva o tópico ou cole uma URL — a IA cria legenda, imagens e roteiro adaptados ao seu nicho.
         </p>
       </div>
 
-      {/* Nicho */}
+      {/* Nicho — compacto quando o tenant já tem um, picker só se "Trocar" */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-2">Nicho do negócio</label>
-        <div className="grid grid-cols-2 gap-2">
-          {NICHO_OPTIONS.map(opt => (
+        {defaultNiche && !showNichePicker ? (
+          <div className="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
+            <div className="text-sm">
+              <span className="text-gray-500">Nicho: </span>
+              <span className="font-medium text-blue-700">{nicheLabel(nicho)}</span>
+            </div>
             <button
-              key={opt.value}
               type="button"
-              onClick={() => setNicho(opt.value)}
-              className={cn(
-                'px-3 py-2 rounded-xl text-sm border transition-colors text-left',
-                nicho === opt.value
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-              )}
+              onClick={() => setShowNichePicker(true)}
+              className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
             >
-              {opt.label}
+              <Pencil className="w-3 h-3" /> Trocar
             </button>
-          ))}
-        </div>
+          </div>
+        ) : (
+          <>
+            <label className="block text-xs font-medium text-gray-600 mb-2">Nicho do conteúdo</label>
+            <div className="grid grid-cols-2 gap-2">
+              {NICHO_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setNicho(opt.value)}
+                  className={cn(
+                    'px-3 py-2 rounded-xl text-sm border transition-colors text-left',
+                    nicho === opt.value
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {defaultNiche && (
+              <button
+                type="button"
+                onClick={() => { setNicho(defaultNiche); setShowNichePicker(false) }}
+                className="text-xs text-gray-500 mt-2 hover:text-gray-700"
+              >
+                ← Voltar pro nicho do negócio
+              </button>
+            )}
+          </>
+        )}
       </div>
 
       {/* Source mode toggle */}

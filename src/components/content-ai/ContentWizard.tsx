@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useContentAI } from '@/hooks/useContentAI'
+import { useAuth } from '@/hooks/useAuth'
 import { LinkInput } from './LinkInput'
 import { AnalysisResult } from './AnalysisResult'
 import { NichoConfig } from './NichoConfig'
@@ -66,6 +67,7 @@ export function ContentWizard() {
     generatePackage,
     updateProject,
   } = useContentAI()
+  const { tenant } = useAuth()
 
   const [step, setStep] = useState<WizardStep>('input')
   const [project, setProject] = useState<ContentProject | null>(null)
@@ -153,7 +155,12 @@ export function ContentWizard() {
       <StepIndicator current={step} />
 
       {step === 'input' && (
-        <LinkInput onSubmit={handleInputSubmit} loading={loading} />
+        <LinkInput
+          onSubmit={handleInputSubmit}
+          loading={loading}
+          defaultNiche={tenant?.niche}
+          tenantName={tenant?.name}
+        />
       )}
 
       {step === 'analysis' && project?.analysis && (
