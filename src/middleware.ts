@@ -105,8 +105,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // Authenticated user on login/cadastro → dashboard
-  if (user && (pathname === '/login' || pathname === '/cadastro')) {
+  // Authenticated user on login → dashboard.
+  // /cadastro é omitido: a página /cadastro detecta user logado sem tenant e
+  // permite completar o onboarding (OAuth signup ou signup parcial).
+  if (user && pathname === '/login') {
     const dashboardUrl = request.nextUrl.clone()
     dashboardUrl.pathname = '/dashboard'
     return NextResponse.redirect(dashboardUrl)

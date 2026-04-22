@@ -22,7 +22,10 @@ export default async function DashboardLayout({
     .eq('id', user.id)
     .single()
 
-  if (!profile || !profile.tenants) redirect('/login')
+  // Usuário autenticado mas sem tenant → manda pra /cadastro completar onboarding.
+  // A página /cadastro detecta sessão ativa sem tenant e pula pro step 'niche'
+  // pré-preenchendo email/nome do auth. Middleware permite /cadastro pra autenticados.
+  if (!profile || !profile.tenants) redirect('/cadastro')
 
   const tenant = Array.isArray(profile.tenants) ? profile.tenants[0] : profile.tenants
 
