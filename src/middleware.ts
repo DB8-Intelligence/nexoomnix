@@ -11,6 +11,10 @@ const PUBLIC_ROUTES = [
   '/esqueci-senha',
   '/api/auth',
   '/api/webhooks',
+  // Crons: Vercel Cron chama sem sessão, auth via Authorization: Bearer CRON_SECRET (validado na própria rota).
+  '/api/cron',
+  // Compositor OG: consumido pelo Instagram Graph API (sem sessão) pra baixar o PNG na hora de publicar.
+  '/api/og',
   // Niche landing pages (marketing)
   '/salaopro',
   '/clinicapro',
