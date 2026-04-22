@@ -15,6 +15,7 @@ import type { PlanType } from '@/types/database'
 import { PersonaSelector } from '@/components/content-ai/PersonaSelector'
 import { getPersonaForNiche } from '@/lib/content-ai/content-personas'
 import type { PersonaId } from '@/lib/content-ai/content-personas'
+import { SocialLoginButtons } from '@/components/auth/SocialLoginButtons'
 
 type Step = 'account' | 'niche' | 'business' | 'persona' | 'plan' | 'success'
 
@@ -64,8 +65,10 @@ export default function CadastroPage() {
   const [personaId, setPersonaId] = useState<PersonaId | null>(null)
   const [showPassword, setShowPassword] = useState(false)
 
-  // Se usuário já está autenticado e tem tenant, redireciona direto pro dashboard.
-  // Evita loop de onboarding pra quem volta pela URL /cadastro.
+  // Detecta sessão ativa ao carregar:
+  //   - Com tenant   -> já cadastrado, redireciona pro dashboard
+  //   - Sem tenant   -> veio via OAuth, pula o passo "account" e vai direto pro nicho
+  //                     (pré-preenchendo nome/email a partir do provider)
   useEffect(() => {
     let cancelled = false
     ;(async () => {
@@ -77,7 +80,18 @@ export default function CadastroPage() {
         .eq('id', session.user.id)
         .maybeSingle()
       if (cancelled) return
-      if (profile?.tenant_id) router.replace('/dashboard')
+      if (profile?.tenant_id) {
+        router.replace('/dashboard')
+        return
+      }
+      // Autenticado (OAuth) sem tenant: pré-preenche dados e avança pra escolha de nicho
+      const meta = session.user.user_metadata ?? {}
+      setFormData(prev => ({
+        ...prev,
+        email:    session.user.email ?? prev.email,
+        fullName: meta.full_name || meta.name || prev.fullName,
+      }))
+      setStep('niche')
     })()
     return () => { cancelled = true }
   }, [supabase, router])
@@ -134,17 +148,24 @@ export default function CadastroPage() {
     setError(null)
 
     try {
-      // 1. Criar usuário no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
-        },
-      })
-
-      if (authError) throw new Error(authError.message)
-      if (!authData.user) throw new Error('Erro ao criar usuário')
+      // 1. Obtém/cria o usuário no Supabase Auth.
+      // Se já existe sessão (OAuth), reaproveita — senão faz signUp por email/senha.
+      const { data: { session: existingSession } } = await supabase.auth.getSession()
+      let userId: string
+      if (existingSession) {
+        userId = existingSession.user.id
+      } else {
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+          },
+        })
+        if (authError) throw new Error(authError.message)
+        if (!authData.user) throw new Error('Erro ao criar usuário')
+        userId = authData.user.id
+      }
 
       // 2. Chamar setup_tenant via RPC com retry em caso de slug duplicado.
       // 23505 = unique_violation no Postgres. Retenta até 5x com sufixo aleatório.
@@ -155,7 +176,7 @@ export default function CadastroPage() {
           ? baseSlug
           : `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`
         const { error } = await supabase.rpc('setup_tenant', {
-          p_user_id:   authData.user.id,
+          p_user_id:   userId,
           p_name:      formData.businessName,
           p_slug:      slug,
           p_niche:     formData.niche,
@@ -179,7 +200,7 @@ export default function CadastroPage() {
         const { data: profile } = await supabase
           .from('profiles')
           .select('tenant_id')
-          .eq('id', authData.user.id)
+          .eq('id', userId)
           .single()
 
         if (profile?.tenant_id) {
@@ -308,6 +329,8 @@ export default function CadastroPage() {
                 <ChevronRight className="w-4 h-4" />
               </button>
             </form>
+
+            <SocialLoginButtons next="/cadastro" />
 
             <p className="text-center text-sm text-gray-500 mt-4">
               Já tem conta?{' '}
