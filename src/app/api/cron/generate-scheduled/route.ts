@@ -32,6 +32,7 @@ interface ScheduleRow {
   name: string
   topic_hint: string | null
   frequency: string
+  template_ids: string[] | null
 }
 
 interface GeneratedPost {
@@ -41,6 +42,15 @@ interface GeneratedPost {
   hashtags: string[]
   ctas: { text: string; type: string; value: string }[]
   image_concept: string
+}
+
+async function getUsageCount(supabase: SupabaseClient, id: string): Promise<number> {
+  const { data } = await supabase
+    .from('content_templates')
+    .select('usage_count')
+    .eq('id', id)
+    .maybeSingle()
+  return (data?.usage_count as number | undefined) ?? 0
 }
 
 async function generateOneDraft(
@@ -78,6 +88,28 @@ async function generateOneDraft(
     return { ok: false, message: 'Resposta da IA não é JSON válido' }
   }
 
+  // Seleciona template do pool do schedule (aleatório) se houver.
+  let pickedTemplateUrl: string | null = null
+  let pickedTemplateId: string | null = null
+  if (schedule.template_ids && schedule.template_ids.length > 0) {
+    const pick = schedule.template_ids[Math.floor(Math.random() * schedule.template_ids.length)]
+    const { data: tpl } = await supabase
+      .from('content_templates')
+      .select('id, image_url')
+      .eq('id', pick)
+      .eq('is_active', true)
+      .maybeSingle()
+    if (tpl) {
+      pickedTemplateUrl = tpl.image_url
+      pickedTemplateId = tpl.id
+      // Incremento best-effort — não bloqueia o fluxo em caso de falha.
+      await supabase
+        .from('content_templates')
+        .update({ usage_count: (await getUsageCount(supabase, tpl.id)) + 1 })
+        .eq('id', tpl.id)
+    }
+  }
+
   const { data: project, error: projError } = await supabase
     .from('content_projects')
     .insert({
@@ -92,6 +124,7 @@ async function generateOneDraft(
       generated_caption:   generated.caption,
       generated_hashtags:  generated.hashtags,
       generated_ctas:      generated.ctas,
+      generated_images:    pickedTemplateUrl ? [{ url: pickedTemplateUrl, template_id: pickedTemplateId }] : null,
       source_description:  schedule.topic_hint ?? null,
       analysis: {
         title: generated.title,
@@ -143,7 +176,7 @@ export async function GET(req: NextRequest) {
 
   const { data: due, error } = await supabase
     .from('content_schedules')
-    .select('id, tenant_id, user_id, name, topic_hint, frequency')
+    .select('id, tenant_id, user_id, name, topic_hint, frequency, template_ids')
     .eq('is_active', true)
     .lte('next_run_at', nowIso)
     .limit(30)
