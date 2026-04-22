@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
+import { BugCatcher } from '@/components/debug/BugCatcher'
+import { DashboardErrorBoundary } from '@/components/debug/DashboardErrorBoundary'
 import type { Tenant, Profile } from '@/types/database'
 
 interface DashboardShellProps {
@@ -43,7 +45,9 @@ export function DashboardShell({ tenant, profile, productMode = 'nexoomnix', isS
           onMenuClick={() => setSidebarOpen(true)}
         />
         <main className="flex-1 p-4 md:p-6 lg:p-8 animate-fade-in">
-          {children}
+          <DashboardErrorBoundary>
+            {children}
+          </DashboardErrorBoundary>
         </main>
       </div>
 
@@ -54,6 +58,9 @@ export function DashboardShell({ tenant, profile, productMode = 'nexoomnix', isS
           onClick={() => setSidebarOpen(false)}
         />
       )}
+
+      {/* Bug-catcher — visível apenas pra staff DB8 */}
+      <BugCatcher enabled={isStaff} />
     </div>
   )
 }
