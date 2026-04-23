@@ -1,7 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import type { CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { getDomainConfig, isReelCreatorDomain, NICHE_COOKIE, PRODUCT_MODE_COOKIE } from '@/lib/domain-config'
 
 // Routes accessible without authentication
 const PUBLIC_ROUTES = [
@@ -34,7 +33,6 @@ const PUBLIC_ROUTES = [
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const hostname = request.headers.get('host') ?? ''
 
   // Site público dos clientes — sempre acessível
   if (pathname.startsWith('/s/')) {
@@ -49,9 +47,6 @@ export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: { headers: request.headers },
   })
-
-  // Domain detection — set niche cookie for the session
-  const domainCfg = getDomainConfig(hostname)
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -75,31 +70,6 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-
-  // Persist niche cookie for domain-specific deployments
-  if (domainCfg) {
-    response.cookies.set(NICHE_COOKIE, domainCfg.niche, {
-      path: '/',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-    })
-  }
-
-  // Persist product-mode cookie for ReelCreator standalone dashboard
-  if (isReelCreatorDomain(hostname)) {
-    response.cookies.set(PRODUCT_MODE_COOKIE, 'reelcreator', {
-      path: '/',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-    })
-  }
-
-  // Unauthenticated user on domain root → redirect to domain's landing page
-  if (!user && pathname === '/' && domainCfg) {
-    const landingUrl = request.nextUrl.clone()
-    landingUrl.pathname = domainCfg.landingPath
-    return NextResponse.redirect(landingUrl)
-  }
 
   // Unauthenticated user on protected route → login
   if (!user && !isPublic) {

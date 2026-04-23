@@ -1,11 +1,15 @@
 export const dynamic = 'force-dynamic'
 
 import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { DashboardShell } from '@/components/dashboard/DashboardShell'
-import { PRODUCT_MODE_COOKIE } from '@/lib/domain-config'
 import { isDb8Staff } from '@/lib/staff'
+
+// Plataforma opera em domínio único (nexoomnix.com). O prop productMode continua
+// existindo no DashboardShell/Sidebar por enquanto para evitar cascata de mudanças;
+// numa fase futura o prop pode ser removido quando o branch isReelCreator da Sidebar
+// também for limpo.
+const PRODUCT_MODE = 'nexoomnix'
 
 export default async function DashboardLayout({
   children,
@@ -29,14 +33,10 @@ export default async function DashboardLayout({
   if (!profile || !profile.tenants) redirect('/cadastro')
 
   const tenant = Array.isArray(profile.tenants) ? profile.tenants[0] : profile.tenants
-
-  const cookieStore = await cookies()
-  const productMode = cookieStore.get(PRODUCT_MODE_COOKIE)?.value ?? 'nexoomnix'
-
   const isStaff = isDb8Staff(user.email)
 
   return (
-    <DashboardShell tenant={tenant} profile={profile} productMode={productMode} isStaff={isStaff}>
+    <DashboardShell tenant={tenant} profile={profile} productMode={PRODUCT_MODE} isStaff={isStaff}>
       {children}
     </DashboardShell>
   )
