@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireTenant } from '@/modules/platform/tenants/tenant-context'
 
 type Frequency = 'daily' | '3x_week' | '5x_week' | 'weekly'
 
@@ -18,9 +19,13 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // Preserva os códigos/mensagens originais: 401 "Unauthorized" e 400 "Profile sem tenant"
+  const ctx = await requireTenant({
+    unauthorizedMessage: 'Unauthorized',
+    tenantMissingStatus: 400,
+    tenantMissingMessage: 'Profile sem tenant',
+  })
+  if (ctx instanceof NextResponse) return ctx
 
   const body = await req.json() as {
     name?: string
@@ -37,21 +42,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'name é obrigatório' }, { status: 400 })
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.tenant_id) {
-    return NextResponse.json({ error: 'Profile sem tenant' }, { status: 400 })
-  }
-
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from('content_schedules')
     .insert({
-      tenant_id:    profile.tenant_id,
-      user_id:      user.id,
+      tenant_id:    ctx.tenantId,
+      user_id:      ctx.user.id,
       name:         body.name.trim(),
       topic_hint:   body.topic_hint?.trim() || null,
       frequency:    body.frequency ?? 'weekly',

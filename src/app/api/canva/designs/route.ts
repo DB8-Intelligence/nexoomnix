@@ -5,23 +5,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getActiveCanvaToken } from '@/lib/canva/token'
 import { listDesigns } from '@/lib/canva/client'
+import { requireTenant } from '@/modules/platform/tenants/tenant-context'
 
 export async function GET(req: NextRequest) {
+  // Preserva os códigos/mensagens originais: 401 "Unauthorized" e 400 "Profile sem tenant"
+  const ctx = await requireTenant({
+    unauthorizedMessage: 'Unauthorized',
+    tenantMissingStatus: 400,
+    tenantMissingMessage: 'Profile sem tenant',
+  })
+  if (ctx instanceof NextResponse) return ctx
+
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.tenant_id) {
-    return NextResponse.json({ error: 'Profile sem tenant' }, { status: 400 })
-  }
-
-  const tokenInfo = await getActiveCanvaToken(supabase, profile.tenant_id)
+  const tokenInfo = await getActiveCanvaToken(supabase, ctx.tenantId)
   if (!tokenInfo) {
     return NextResponse.json({ error: 'Canva não conectado', needsReconnect: true }, { status: 401 })
   }
