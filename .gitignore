@@ -41,3 +41,7 @@ supabase/.temp
 # setup secrets — NUNCA commitar
 scripts/setup-secrets.json
 scripts/setup-result.json
+
+# Claude Code harness — artefatos locais do agente, não vão pro repo
+.claude/scheduled_tasks.lock
+.claude/settings.local.json
