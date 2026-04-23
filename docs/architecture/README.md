@@ -8,7 +8,7 @@ NexoOmnix é um SaaS multi-tenant multi-nicho construído em Next.js 14 (App Rou
 
 A aplicação web unifica 13 nichos de negócio sob o domínio `nexoomnix.com`, com módulos funcionais compartilhados (Agenda, CRM, Financeiro, Contabilidade, Content AI, Reel Creator, Social, Site Público) que se adaptam ao nicho do tenant.
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────┐
 │                    nexoomnix.com (Vercel)                      │
 │  Next.js App Router: UI + auth gate + route handlers finos     │
@@ -49,7 +49,7 @@ A modularização resolve isso introduzindo uma camada `src/modules/` organizada
 
 ## 3. O conceito de `src/modules/*`
 
-```
+```text
 src/modules/
 ├── _shared/                    # Tipos e utilitários comuns a vários módulos
 ├── platform/                   # Cross-cutting: auth, tenant, niches, integrações
@@ -78,7 +78,7 @@ src/modules/
 
 Cada módulo de domínio segue o padrão:
 
-```
+```text
 modules/<domain>/
 ├── domain/           # Entidades, value objects, tipos puros (sem I/O)
 ├── application/      # Use cases (orchestração: recebe inputs, chama infra, retorna DTOs)
@@ -110,6 +110,7 @@ Decisões arquiteturais são registradas como ADRs numerados em `docs/architectu
 Índice:
 
 - [ADR-0001 — Module boundaries](./ADR-0001-module-boundaries.md)
+- [ADR-0002 — Stripe webhook stays outside the billing contract](./ADR-0002-stripe-webhook-outside-billing-contract.md)
 
 ## 6. Roadmap de refatoração
 

@@ -1,10 +1,9 @@
 /**
  * Contract de billing — mantido intencionalmente pequeno.
  *
- * Cobre APENAS as operações usadas pela rota /api/stripe/create-checkout
- * (única consumidora nesta sprint). Outros casos de uso (billing portal,
- * cancel subscription, resumir assinatura) serão adicionados à interface
- * em sprints futuras, quando houver uma rota real exigindo.
+ * Cobre as 3 operações usadas pelas rotas síncronas de billing
+ * (create-checkout + portal). Webhook NÃO está no contract — ver
+ * `docs/architecture/ADR-0002-stripe-webhook-outside-billing-contract.md`.
  *
  * O contract é agnóstico ao provedor: adapters concretos (Stripe hoje,
  * potencialmente Kiwify/Pagar.me amanhã) implementam esta interface.
@@ -46,7 +45,48 @@ export interface BillingCheckoutSession {
   url: string | null
 }
 
+export interface CreateBillingPortalSessionInput {
+  customerId: string
+  /** URL para onde o portal devolve o cliente depois da interação. */
+  returnUrl: string
+}
+
+export interface BillingPortalSession {
+  id: string
+  url: string
+}
+
 export interface BillingProvider {
   createCustomer(input: CreateCustomerInput): Promise<BillingCustomer>
   createCheckoutSession(input: CreateCheckoutSessionInput): Promise<BillingCheckoutSession>
+  createBillingPortalSession(
+    input: CreateBillingPortalSessionInput,
+  ): Promise<BillingPortalSession>
+}
+
+// ── Fallback provider ─────────────────────────────────────────────────────
+//
+// Quando `STRIPE_SECRET_KEY` (ou o equivalente de outro provedor) não está
+// configurada, o factory retorna `NullBillingProvider` em vez de deixar
+// o SDK explodir numa call distante. Isso torna a falha explícita e
+// tipada (`BillingNotConfiguredError`), facilitando o tratamento nas
+// camadas superiores em ambientes de dev/CI sem chaves de teste.
+
+export class BillingNotConfiguredError extends Error {
+  constructor() {
+    super('billing-not-configured')
+    this.name = 'BillingNotConfiguredError'
+  }
+}
+
+export class NullBillingProvider implements BillingProvider {
+  async createCustomer(): Promise<BillingCustomer> {
+    throw new BillingNotConfiguredError()
+  }
+  async createCheckoutSession(): Promise<BillingCheckoutSession> {
+    throw new BillingNotConfiguredError()
+  }
+  async createBillingPortalSession(): Promise<BillingPortalSession> {
+    throw new BillingNotConfiguredError()
+  }
 }

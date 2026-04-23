@@ -3,7 +3,9 @@ import { getStripe } from '@/lib/stripe'
 import type {
   BillingCheckoutSession,
   BillingCustomer,
+  BillingPortalSession,
   BillingProvider,
+  CreateBillingPortalSessionInput,
   CreateCheckoutSessionInput,
   CreateCustomerInput,
 } from './billing-provider'
@@ -46,6 +48,17 @@ export class StripeBillingProvider implements BillingProvider {
       custom_text: input.submitMessage
         ? { submit: { message: input.submitMessage } }
         : undefined,
+    })
+    return { id: session.id, url: session.url }
+  }
+
+  async createBillingPortalSession(
+    input: CreateBillingPortalSessionInput,
+  ): Promise<BillingPortalSession> {
+    const stripe = getStripe()
+    const session = await stripe.billingPortal.sessions.create({
+      customer: input.customerId,
+      return_url: input.returnUrl,
     })
     return { id: session.id, url: session.url }
   }
