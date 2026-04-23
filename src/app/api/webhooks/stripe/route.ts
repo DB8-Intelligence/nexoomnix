@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { stripe, planFromPriceId } from '@/lib/stripe'
-import { sendEmail, welcomeEmail, paymentFailedEmail } from '@/lib/resend'
+import {
+  sendPaymentFailedNotice,
+  sendSubscriptionWelcome,
+} from '@/modules/billing/application/send-billing-notification'
 import type Stripe from 'stripe'
 
 export async function POST(req: NextRequest) {
@@ -49,8 +52,11 @@ export async function POST(req: NextRequest) {
         .single()
 
       if (tenant?.email) {
-        const { subject, html } = welcomeEmail(tenant.name, plan)
-        await sendEmail({ to: tenant.email, subject, html })
+        await sendSubscriptionWelcome({
+          to: tenant.email,
+          tenantName: tenant.name,
+          plan,
+        })
       }
       break
     }
@@ -108,8 +114,11 @@ export async function POST(req: NextRequest) {
 
       if (tenant?.email) {
         const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-        const { subject, html } = paymentFailedEmail(tenant.name, `${appUrl}/assinatura`)
-        await sendEmail({ to: tenant.email, subject, html })
+        await sendPaymentFailedNotice({
+          to: tenant.email,
+          tenantName: tenant.name,
+          retryUrl: `${appUrl}/assinatura`,
+        })
       }
       break
     }
