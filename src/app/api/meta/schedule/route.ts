@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireTenantWithRow } from '@/modules/platform/tenants/tenant-context'
 
 interface ScheduleRequest {
   connectionId: string
@@ -13,22 +14,12 @@ interface ScheduleRequest {
 
 // POST — agendar post para publicação futura
 export async function POST(req: Request) {
-  const supabase = await createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  // Preserva mensagem original em inglês no 401
+  const ctx = await requireTenantWithRow({ unauthorizedMessage: 'Unauthorized' })
+  if (ctx instanceof NextResponse) return ctx
 
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  // Verificar plano PRO MAX
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, tenants(plan)')
-    .eq('id', user.id)
-    .single()
-
-  const plan = (profile?.tenants as { plan?: string } | null)?.plan
-  if (!plan || !['pro_max', 'enterprise'].includes(plan)) {
+  // Gate de plano específico desta rota
+  if (!['pro_max', 'enterprise'].includes(ctx.tenant.plan)) {
     return NextResponse.json(
       { error: 'Esta funcionalidade requer o plano PRO MAX ou superior.' },
       { status: 403 }
@@ -54,6 +45,8 @@ export async function POST(req: Request) {
     )
   }
 
+  const supabase = await createClient()
+
   // Verificar conexão
   const { data: connection } = await supabase
     .from('social_media_connections')
@@ -73,8 +66,8 @@ export async function POST(req: Request) {
   const { data: post, error: postError } = await supabase
     .from('scheduled_posts')
     .insert({
-      tenant_id: profile!.tenant_id,
-      user_id: user.id,
+      tenant_id: ctx.tenantId,
+      user_id: ctx.user.id,
       connection_id: connectionId,
       caption: fullCaption,
       media_urls: mediaUrls,

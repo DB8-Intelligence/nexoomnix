@@ -118,3 +118,81 @@ export async function requireTenant(
     throw error
   }
 }
+
+// ── Variante com tenant row ──────────────────────────────────────────────
+//
+// Para rotas que precisam não só de `tenant_id` mas também de campos do
+// próprio `tenants` (plan gate, nicho, name para prompt, etc). Evita os
+// ~7 routes que hoje duplicam `.select('tenant_id, tenants(...)')`.
+//
+// A interface é minimal e fixa (id, name, slug, niche, plan, email) para
+// manter previsibilidade. Se um consumer futuro precisar de outras colunas
+// (stripe_customer_id, trial_ends_at, etc), revisitar em sprint dedicada —
+// o billing já tem seus próprios caminhos, outras necessidades por enquanto
+// são teóricas.
+
+export interface TenantRow {
+  id: string
+  name: string
+  slug: string
+  niche: string
+  plan: string
+  email: string | null
+}
+
+export interface TenantContextWithRow extends TenantContext {
+  tenant: TenantRow
+}
+
+export async function getTenantWithRow(): Promise<TenantContextWithRow> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new UnauthorizedError()
+
+  // Join profile + tenant numa única query — mesmo padrão das rotas pré-migração
+  // (evita roundtrip extra). Supabase retorna o relacionamento como objeto ou
+  // array dependendo da cardinalidade inferida; normalizamos logo.
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, tenant_id, role, tenants(id, name, slug, niche, plan, email)')
+    .eq('id', user.id)
+    .single()
+
+  if (error || !data?.tenant_id) throw new TenantMissingError()
+
+  const tenantRow = Array.isArray(data.tenants) ? data.tenants[0] : data.tenants
+  if (!tenantRow) throw new TenantMissingError()
+
+  return {
+    user,
+    tenantId: data.tenant_id,
+    profile: {
+      id: data.id,
+      tenant_id: data.tenant_id,
+      role: data.role ?? null,
+    },
+    tenant: tenantRow as TenantRow,
+  }
+}
+
+export async function requireTenantWithRow(
+  options: RequireTenantOptions = {},
+): Promise<TenantContextWithRow | NextResponse> {
+  try {
+    return await getTenantWithRow()
+  } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json(
+        { error: options.unauthorizedMessage ?? 'Não autorizado' },
+        { status: options.unauthorizedStatus ?? 401 },
+      )
+    }
+    if (error instanceof TenantMissingError) {
+      return NextResponse.json(
+        { error: options.tenantMissingMessage ?? 'Tenant não encontrado' },
+        { status: options.tenantMissingStatus ?? 404 },
+      )
+    }
+    throw error
+  }
+}
