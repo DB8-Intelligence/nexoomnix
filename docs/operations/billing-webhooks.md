@@ -7,7 +7,7 @@
 A Sprint 7 introduziu idempotência no webhook Stripe via tabela
 `stripe_webhook_events`. Fluxo esperado:
 
-```
+```text
 (entrega)  → INSERT status='processing', received_at=now()
 (sucesso)  → UPDATE status='processed',  processed_at=now()
 (erro)     → UPDATE status='failed',     failed_at=now(), error_message=<msg>
@@ -66,7 +66,7 @@ node scripts/cleanup-webhook-zombies.mjs --minutes=15
 
 Saída esperada quando não há zombies:
 
-```
+```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   Stripe Webhook Zombie Cleanup
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -79,7 +79,7 @@ Saída esperada quando não há zombies:
 
 Saída quando há candidatos:
 
-```
+```text
 🧟 2 evento(s) zombie:
 
   evt_1TAbc...
@@ -188,10 +188,129 @@ Para qualquer opção, considerar:
 - Threshold mais alto (30-60 min) pra evitar false positives de picos
   de latência
 
+## Monitoramento e diagnóstico
+
+Script read-only pra visibilidade operacional em `stripe_webhook_events`.
+Útil pra: sanity check após deploy, investigar "paguei e o plano não
+ativou", detectar zombies antes de rodar cleanup.
+
+### Uso
+
+```bash
+# Últimas 24h (default)
+node scripts/webhook-stats.mjs
+
+# Última hora
+node scripts/webhook-stats.mjs --hours=1
+
+# Últimos 7 dias
+node scripts/webhook-stats.mjs --hours=168
+```
+
+### Exemplo de output
+
+```text
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Stripe Webhook Stats — últimas 24h
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 Resumo geral (6 eventos)
+   ✅ processed   4
+   ❌ failed      1
+   ⏳ processing  1
+
+📈 Top 5 event types
+   checkout.session.completed             3
+   customer.subscription.updated          1
+   invoice.payment_failed                 1
+   customer.subscription.deleted          1
+
+🕒 Últimos 5 eventos
+   ✅  evt_xxx_1                   customer.subscription.updated      30min atrás
+   ⏳  evt_xxx_6                   checkout.session.completed         45min atrás
+   ❌  evt_xxx_4                   invoice.payment_failed             1h atrás
+   ...
+
+❌ Falhas (1)
+   evt_xxx_4  invoice.payment_failed  59min atrás
+     "Resend timeout after 10s"
+
+🧟 Possíveis zombies (processing > 10min) — 1
+   evt_xxx_6  checkout.session.completed  45min atrás
+
+   💡 Rode: node scripts/cleanup-webhook-zombies.mjs --minutes=10
+```
+
+### Como interpretar
+
+Cada seção responde uma pergunta específica:
+
+| Seção | O que responde |
+|---|---|
+| 📊 Resumo geral | Distribuição de status no período — processed domina? há failures acumulando? |
+| 📈 Top 5 event types | Mix de eventos — em linha com o esperado do Stripe? |
+| 🕒 Últimos 5 eventos | Fluxo está vivo? último evento é recente? |
+| ❌ Falhas | Que erros estão ocorrendo? mesma mensagem repetida = bug; mensagens variadas = transient |
+| 🧟 Possíveis zombies | Eventos travados em processing há > 10min — ação necessária |
+
+### Sinais de alerta
+
+| Sinal | Interpretação | Ação |
+|---|---|---|
+| `failed > 0` | Side effect explodiu (Resend down, DB indisponível, bug no use case) | Ler `error_message` da falha; investigar use case correspondente; após fix, Stripe retenta automaticamente (status → retry-failed) |
+| `failed` com mesmo `error_message` repetido | Bug determinístico (não transient) | Corrigir código antes que Stripe esgote retries |
+| `processing > 10min` (zombies) | Processo crashou mid-request | Rodar `cleanup-webhook-zombies.mjs` — ver seção acima |
+| `Resumo geral = 0 eventos` em janela de 24h+ | Webhook não está recebendo ou validação HMAC falhando silenciosa | Checar Stripe dashboard → Events → Delivery attempts; verificar `STRIPE_WEBHOOK_SECRET` sincronizado |
+| `processed` +100x o esperado | Deduplication quebrou OU volume real aumentou | Comparar com contadores Stripe dashboard |
+
+### Queries SQL equivalentes
+
+Se preferir operar direto no Supabase SQL Editor:
+
+```sql
+-- Resumo geral (últimas 24h)
+SELECT status, count(*) AS n
+FROM stripe_webhook_events
+WHERE received_at > now() - interval '24 hours'
+GROUP BY status
+ORDER BY status;
+
+-- Top 5 event types (últimas 24h)
+SELECT type, count(*) AS n
+FROM stripe_webhook_events
+WHERE received_at > now() - interval '24 hours'
+GROUP BY type
+ORDER BY n DESC
+LIMIT 5;
+
+-- Últimos 5 eventos
+SELECT id, type, status, received_at
+FROM stripe_webhook_events
+ORDER BY received_at DESC
+LIMIT 5;
+
+-- Falhas com mensagem
+SELECT id, type, failed_at, error_message
+FROM stripe_webhook_events
+WHERE status = 'failed'
+  AND received_at > now() - interval '24 hours'
+ORDER BY failed_at DESC
+LIMIT 10;
+
+-- Zombies (processing > 10min)
+SELECT id, type, received_at, now() - received_at AS age
+FROM stripe_webhook_events
+WHERE status = 'processing'
+  AND received_at < now() - interval '10 minutes'
+ORDER BY received_at ASC;
+```
+
 ## Referências cruzadas
 
 - Sprint 7 (`f6716ca`): implementação da idempotência
 - Sprint 8 (`ef629c2`): validação end-to-end do fluxo idempotente
+- Sprint 10 (`6b93a5a`): script de zombie cleanup
+- Sprint 11 (stats): este runbook ampliado
 - Repository: [src/modules/billing/infra/stripe-webhook-event-repository.ts](../../src/modules/billing/infra/stripe-webhook-event-repository.ts)
 - Migration: [supabase/migrations/022_stripe_webhook_events.sql](../../supabase/migrations/022_stripe_webhook_events.sql)
 - ADR-0002: webhook fica fora do BillingProvider contract
