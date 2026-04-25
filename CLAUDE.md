@@ -245,6 +245,13 @@ NEXT_PUBLIC_APP_NAME=NexoOmnix
 
 # Email (Fase 8)
 # RESEND_API_KEY=
+
+# AI Cost Control (Sprint Cost Control — Abr 2026)
+# SIMULATE_AI=true em DEV / LOCAL — bypass total de Anthropic, Fal.ai,
+#                                   ElevenLabs e OpenAI TTS (retorna mocks).
+# SIMULATE_AI ausente ou false em PROD — chamadas reais com guardrails
+#                                   (rate limit + plan gate + audit).
+SIMULATE_AI=
 ```
 
 ---
@@ -332,7 +339,10 @@ Agent Skills (012):     agent_skills · skill_generation_log
 CRM Pipeline (013):     crm_pipelines · crm_stages · crm_deals
                         crm_deal_channels · crm_activities
                         crm_messages · crm_message_templates
+AI Cost Control (023):  ai_usage  (rate limit + audit trail por tenant/tipo)
 ```
+
+> Migration 023 aplicada em prod via MCP Supabase em 2026-04-24. Validar se ainda está consistente antes do próximo release.
 
 ### A criar — 004_imob_module.sql (Fase 6) ✅ APLICADA
 ```sql
@@ -785,16 +795,84 @@ Features construídas depois do fechamento da FASE 10, ainda não deployadas em 
 ✅ APIs novas: /api/branding, /api/crm, /api/meta, /api/reel-creator, /api/skills
 ```
 
+### ARCHITECTURE REFACTOR — Sprints 0-11 (Abr 2026) ✅
+
+Refactor estrutural concluído em 12 sprints. Saiu de "tudo em `src/lib/`" para arquitetura modular com contratos, use cases e ADRs operacionais. Branch local 15 commits ahead de origin/main, ainda não mergeada.
+
+```text
+✅ Sprint 0  — src/modules/ scaffolding + remoção de multi-domain legacy
+✅ Sprint 1  — Email integration contract + primeira use case
+✅ Sprint 2  — tenant-context helper + 3 rotas migradas
+✅ Sprint 3  — tenant-context aplicado em 6 rotas restantes
+✅ Sprint 4  — Billing contract + create-checkout use case
+✅ Sprint 5  — Billing portal use case + ADR-0002 (webhook fora do BillingProvider)
+✅ Sprint 6  — Stripe webhook side effects movidos para use cases
+✅ Sprint 7  — Stripe webhook idempotency (anti-replay)
+✅ Sprint 9  — getTenantWithRow helper + 2 rotas Group C migradas
+✅ Sprint 10 — Stripe webhook zombie cleanup tool (script ops)
+✅ Sprint 11 — Stripe webhook stats tool + runbook operacional expandido
+```
+
+**ADR-0002 (decisão arquitetural permanente):** webhook Stripe NÃO entra no BillingProvider. Validação HMAC fica no route handler; side effects ficam em use cases. Não reverter.
+
+### SPRINT COST CONTROL — Proteção de provedores pagos (Abr 2026) ✅
+
+4 camadas de defesa para todas as integrações de IA paga. Migration 023 (`ai_usage`) aplicada em prod. 14 rotas AI cobertas.
+
+```text
+✅ Camada 1 — Simulation mode  (SIMULATE_AI=true bypass total para dev)
+✅ Camada 2 — Rate limit       (por tenant/dia: text=20, image=10, tts=5)
+✅ Camada 3 — Feature gate     (text=all, image=pro+, tts=pro_max+)
+✅ Camada 4 — Audit log        (console + linha em ai_usage por chamada)
+
+Helper: src/modules/platform/ai-cost-control/index.ts → guardAICall()
+Tabela: ai_usage (tenant_id, kind, route, plan, cost_estimate, created_at)
+Rotas:  /api/ai/* · /api/content-ai/* · /api/reel-creator/* (14 total)
+```
+
+**REGRA CRÍTICA:** toda nova rota que invoque Anthropic, Fal.ai, ElevenLabs, OpenAI TTS, Replicate ou qualquer provider pago de IA deve obrigatoriamente passar por `guardAICall()` antes da chamada externa. Sem exceção — rate limit + plan gate são pré-condição arquitetural.
+
+Limites em `src/modules/platform/ai-cost-control/rate-limit.ts` (const `DAILY_LIMITS`). Ajustar lá quando o tráfego crescer.
+
+### DEPLOY ALTERNATIVO — Cloud Run (Fase A1) ⚠️ PREPARADO, NÃO DEPLOYADO
+
+Migração GCP incremental: Cloud Run primeiro, mantendo Supabase/Auth/Storage/n8n/Railway no estado atual. Big bang descartado.
+
+**Estado atual:** Fase A1 (preparação) concluída. Arquivos no working tree, ainda **não commitados** e ainda **não deployados**.
+
+```text
+⚠️ next.config.mjs        → output: 'standalone'  (uncommitted)
+⚠️ Dockerfile             → multi-stage, Node 20 Alpine, ~150-200 MB  (uncommitted)
+⚠️ .dockerignore          → exclui git/node_modules/.next/.env*  (uncommitted)
+⚠️ docs/deploy/cloud-run.md → runbook completo A1→A2→A3→A4  (uncommitted)
+```
+
+**Roteiro restante:**
+
+| Fase | Status | Ação |
+|---|---|---|
+| A1 | ✅ preparado | Dockerfile + standalone + dockerignore + runbook |
+| A2 | ⬜ pendente | `docker build` local + `gcloud run deploy --source .` → URL provisória + smoke test |
+| A3 | ⬜ pendente | Cloud Scheduler para `/api/cron/publish-scheduled` e `/api/cron/generate-scheduled` (substitui `vercel.json` crons) |
+| A4 | ⬜ pendente | DNS swap `nexoomnix.com` → Cloud Run + atualizar Stripe webhook URL + desabilitar crons Vercel |
+
+**Não migrar:** Supabase, n8n (Railway), db8-agent (Railway), provedores externos (Stripe, Resend, Anthropic, Fal.ai, ElevenLabs, OpenAI, Canva, Meta). Vercel pode ficar de standby pós-A4 para rollback rápido.
+
 ### SPRINT 1 — PATH TO REVENUE (em andamento)
 
 ```text
-⬜ Mergear branch atual em main via PR
+⬜ Mergear branch atual em main via PR (15 commits ahead)
 ⬜ Aplicar migrations 008-013 em Supabase producao
+⬜ Validar migration 023 (ai_usage) em prod — aplicada via MCP em 2026-04-24, confirmar consistência
 ✅ Domínio customizado no Vercel: nexoomnix.com (único domínio — multi-domain descartado)
 ⬜ Validar Stripe Live (webhook, price IDs, checkout real)
 ⬜ Validar Resend (email transacional)
 ⬜ Smoke test end-to-end: cadastro → trial → checkout → login → feature Pro
 ⬜ Resolver 11 vulnerabilidades Dependabot (6 high, 5 moderate)
+⬜ Commitar arquivos Cloud Run Fase A1 (Dockerfile, .dockerignore, docs/deploy/, next.config.mjs)
+⬜ Fase A2 — docker build local + deploy Cloud Run em URL provisória
+⬜ Fase A3 — Cloud Scheduler substitui crons Vercel
+⬜ Fase A4 — DNS swap nexoomnix.com → Cloud Run após validação
 ```
 
 ---
