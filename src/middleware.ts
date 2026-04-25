@@ -91,8 +91,12 @@ export async function middleware(request: NextRequest) {
   return response
 }
 
+// Rotas que NÃO devem passar pelo middleware (sem auth check, sem cookie parsing).
+// Inclui artefatos do Next, arquivos de SEO/PWA e extensões estáticas comuns.
+// `.webp` corrigido (era typo `.webpo`); `.ico/.txt/.xml/.json/.woff*/.ttf` adicionados
+// para cobrir robots.txt, sitemap.xml, manifest.json, fontes e ícones servidos diretamente.
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webpo)$).*)',
+    '/((?!_next/static|_next/image|_next/data|favicon.ico|robots.txt|sitemap.xml|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml|json|woff|woff2|ttf)$).*)',
   ],
 }
