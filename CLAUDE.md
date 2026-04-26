@@ -890,7 +890,20 @@ Base Firebase limpa e fechada (`deny-all`) provisionada no projeto GCP `db8-nexo
 
 Provisionamento idempotente via [`scripts/provision-firebase-base.mjs`](scripts/provision-firebase-base.mjs). Regras em [`firebase/firestore.rules`](firebase/firestore.rules) e [`firebase/storage.rules`](firebase/storage.rules). Documentação completa: [`docs/firebase/base.md`](docs/firebase/base.md).
 
-**Não fazer** sem decisão explícita: Web App registration, modelagem Firestore, OAuth providers, integração com app V1, conexão a APIs externas.
+**Cloud Functions já implementadas:**
+
+| Função | Tipo | Trigger | Notas |
+|---|---|---|---|
+| `authOnCreate` | **Gen 1** (obrigatório) | `providers/firebase.auth/eventTypes/user.create` | Cria `users/{uid}` ao signup. Idempotente. |
+
+**Armadilhas de deploy registradas** (válidas para próximas funções):
+
+1. **Auth triggers só funcionam em Gen 1** — Firebase Auth (`functions.auth.user().onCreate(...)`) não tem equivalente Gen 2. Ao usar `gcloud functions deploy` é obrigatório `--no-gen2` (default desde Cloud SDK 492 é Gen 2).
+2. **Deploy via `gcloud functions deploy` (não via `firebase deploy`) exige `--set-env-vars=GCLOUD_PROJECT=db8-nexoomnix`** — `firebase-functions/v1` falha em runtime com `process.env.GCLOUD_PROJECT is not set` quando essa env não é injetada. `firebase deploy` (firebase-tools) injeta automaticamente; `gcloud functions deploy` não.
+
+Design de demais funções planejadas: [`docs/firebase/cloud-functions.md`](docs/firebase/cloud-functions.md). Modelo de dados: [`docs/firebase/data-model.md`](docs/firebase/data-model.md). Validação contra fluxos V1: [`docs/firebase/model-validation.md`](docs/firebase/model-validation.md).
+
+**Não fazer** sem decisão explícita: Web App registration, modelagem Firestore além do design atual, OAuth providers, integração com app V1, conexão a APIs externas.
 
 ---
 
