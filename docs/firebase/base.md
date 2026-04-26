@@ -115,7 +115,7 @@ Pode acontecer se alguém criou bucket via gcloud sem `addFirebase`. O script de
 | # | Passo | Status |
 |---|---|---|
 | 1 | Registrar **Web App** no Firebase project (`firebase apps:create web` ou via Console) — gera config (`apiKey`, `authDomain`, `appId`) | ⬜ pendente |
-| 2 | Definir **modelo Firestore** (collections + document shapes) e evoluir regras | ⬜ pendente |
+| 2 | Definir **modelo Firestore** (collections + document shapes) e evoluir regras | 🟡 **proposta em [data-model.md](data-model.md)** — não aplicada |
 | 3 | Configurar **provedores OAuth** Auth (Google, Facebook) se aplicável | ⬜ pendente |
 | 4 | Definir uso de **Firebase Hosting** (frontend? estático? SSR?) | ⬜ pendente |
 | 5 | Decidir **integração com app V1**: paralelo permanente, migração faseada, ou Firebase fica em standby | ⬜ pendente |
