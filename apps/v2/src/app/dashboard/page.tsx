@@ -2,9 +2,11 @@
 
 import { useEffect, useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import { onAuthStateChanged, signOut, type User } from 'firebase/auth'
+import { signOut } from 'firebase/auth'
 import { httpsCallable } from 'firebase/functions'
 import { auth, functions } from '@/lib/firebase'
+import { useAuth } from '@/lib/auth-context'
+import { useCurrentTenant } from '@/lib/use-current-tenant'
 
 interface CreateTenantInput {
   tenantName: string
@@ -20,53 +22,17 @@ interface CreateTenantOutput {
 
 export default function DashboardPage() {
   const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [tenantName, setTenantName] = useState('')
-  const [slug, setSlug] = useState('')
-  const [niche, setNiche] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [result, setResult] = useState<CreateTenantOutput | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const { user, loading: authLoading, refreshToken } = useAuth()
+  const { tenantId, role, hasAnyTenant, allTenants, loading: tenantLoading } = useCurrentTenant()
 
+  // Redirect se sem user (após auth resolver)
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      if (!u) {
-        router.replace('/login')
-        return
-      }
-      setUser(u)
-      setLoading(false)
-    })
-    return unsub
-  }, [router])
-
-  async function handleCreate(e: FormEvent) {
-    e.preventDefault()
-    setBusy(true)
-    setError(null)
-    setResult(null)
-    try {
-      const fn = httpsCallable<CreateTenantInput, CreateTenantOutput>(functions, 'createTenant')
-      const res = await fn({
-        tenantName: tenantName.trim(),
-        slug: slug.trim().toLowerCase(),
-        niche: niche.trim() || undefined,
-      })
-      setResult(res.data)
-      // Refresh ID token para receber novas custom claims (tenants[], roles{})
-      if (auth.currentUser) {
-        await auth.currentUser.getIdToken(true)
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      setError(msg)
-    } finally {
-      setBusy(false)
+    if (!authLoading && !user) {
+      router.replace('/login')
     }
-  }
+  }, [user, authLoading, router])
 
-  if (loading) {
+  if (authLoading || tenantLoading) {
     return (
       <main style={center}>
         <p style={{ color: '#888' }}>Carregando…</p>
@@ -74,114 +40,225 @@ export default function DashboardPage() {
     )
   }
 
+  if (!user) {
+    return (
+      <main style={center}>
+        <p style={{ color: '#888' }}>Redirecionando…</p>
+      </main>
+    )
+  }
+
   return (
     <main style={{ padding: 24, maxWidth: 720, margin: '0 auto' }}>
-      <header
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 24,
-        }}
-      >
-        <div>
-          <h1 style={{ margin: 0, fontSize: 22 }}>NexoOmnix V2 — Dashboard</h1>
-          <p style={{ margin: '4px 0 0', color: '#888', fontSize: 13 }}>
-            {user?.email} · uid {user?.uid.slice(0, 8)}…
-          </p>
-        </div>
-        <button
-          onClick={async () => {
-            await signOut(auth)
-            router.replace('/login')
-          }}
-          style={ghostBtn}
-        >
-          Sair
-        </button>
-      </header>
-
-      <section style={card}>
-        <h2 style={{ margin: 0, fontSize: 16 }}>Criar tenant</h2>
-        <p style={{ margin: '4px 0 16px', color: '#888', fontSize: 13 }}>
-          Chama a Cloud Function callable <code>createTenant</code>.
-        </p>
-
-        <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <label style={label}>
-            Nome do tenant
-            <input
-              type="text"
-              required
-              maxLength={100}
-              placeholder="Salão Bella"
-              value={tenantName}
-              onChange={(e) => setTenantName(e.target.value)}
-              style={input}
-            />
-          </label>
-          <label style={label}>
-            Slug
-            <input
-              type="text"
-              required
-              pattern="^[a-z][a-z0-9-]{2,49}$"
-              placeholder="salao-bella"
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              style={input}
-            />
-            <small style={{ color: '#666' }}>
-              kebab-case, 3-50 chars, começa com letra
-            </small>
-          </label>
-          <label style={label}>
-            Nicho (opcional)
-            <select value={niche} onChange={(e) => setNiche(e.target.value)} style={input}>
-              <option value="">(nenhum)</option>
-              {[
-                'imoveis',
-                'beleza',
-                'tecnico',
-                'saude',
-                'juridico',
-                'pet',
-                'educacao',
-                'nutricao',
-                'engenharia',
-                'fotografia',
-                'gastronomia',
-                'fitness',
-                'financas',
-              ].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <button type="submit" disabled={busy} style={primaryBtn}>
-            {busy ? 'Criando…' : 'Criar tenant'}
-          </button>
-        </form>
-
-        {result && (
-          <div style={successBox}>
-            <strong>Tenant criado ✓</strong>
-            <pre style={{ margin: '8px 0 0', fontSize: 12 }}>
-              {JSON.stringify(result, null, 2)}
-            </pre>
-            <p style={{ margin: '8px 0 0', fontSize: 12, color: '#888' }}>
-              Custom claims sincronizadas pelo trigger <code>membershipsOnWrite</code>.
-              Token foi refrescado.
-            </p>
-          </div>
-        )}
-
-        {error && <pre style={errBox}>{error}</pre>}
-      </section>
+      <Header user={user} />
+      {hasAnyTenant ? (
+        <TenantDashboard
+          tenantId={tenantId}
+          role={role}
+          allTenants={allTenants}
+        />
+      ) : (
+        <Onboarding refreshToken={refreshToken} />
+      )}
     </main>
+  )
+}
+
+function Header({ user }: { user: { email: string | null; uid: string } }) {
+  const router = useRouter()
+  return (
+    <header
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 24,
+      }}
+    >
+      <div>
+        <h1 style={{ margin: 0, fontSize: 22 }}>NexoOmnix V2 — Dashboard</h1>
+        <p style={{ margin: '4px 0 0', color: '#888', fontSize: 13 }}>
+          {user.email} · uid {user.uid.slice(0, 8)}…
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={async () => {
+          await signOut(auth)
+          router.replace('/login')
+        }}
+        style={ghostBtn}
+      >
+        Sair
+      </button>
+    </header>
+  )
+}
+
+function TenantDashboard({
+  tenantId,
+  role,
+  allTenants,
+}: {
+  tenantId: string | null
+  role: string | null
+  allTenants: string[]
+}) {
+  return (
+    <section style={card}>
+      <h2 style={{ margin: 0, fontSize: 16 }}>Tenant ativo</h2>
+      <dl style={{ margin: '16px 0 0', display: 'grid', gridTemplateColumns: '120px 1fr', gap: 8, fontSize: 13 }}>
+        <dt style={{ color: '#888' }}>tenantId</dt>
+        <dd style={{ margin: 0, fontFamily: 'monospace' }}>{tenantId}</dd>
+        <dt style={{ color: '#888' }}>role</dt>
+        <dd style={{ margin: 0 }}>{role ?? '—'}</dd>
+        <dt style={{ color: '#888' }}>total tenants</dt>
+        <dd style={{ margin: 0 }}>{allTenants.length}</dd>
+      </dl>
+      <p style={{ marginTop: 24, color: '#666', fontSize: 12 }}>
+        Estado mínimo de validação. Próximas iterações: ler {`tenants/{tenantId}`} via callable
+        seguro, exibir nome/plano/branding, listar membros.
+      </p>
+    </section>
+  )
+}
+
+function Onboarding({ refreshToken }: { refreshToken: () => Promise<void> }) {
+  const [tenantName, setTenantName] = useState('')
+  const [slug, setSlug] = useState('')
+  const [niche, setNiche] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [statusMsg, setStatusMsg] = useState<string | null>(null)
+  const [result, setResult] = useState<CreateTenantOutput | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleCreate(e: FormEvent) {
+    e.preventDefault()
+    setBusy(true)
+    setError(null)
+    setResult(null)
+    setStatusMsg('Chamando createTenant…')
+    try {
+      const fn = httpsCallable<CreateTenantInput, CreateTenantOutput>(
+        functions,
+        'createTenant'
+      )
+      const res = await fn({
+        tenantName: tenantName.trim(),
+        slug: slug.trim().toLowerCase(),
+        niche: niche.trim() || undefined,
+      })
+      setResult(res.data)
+      setStatusMsg('Aguardando trigger sincronizar custom claims…')
+
+      // membershipsOnWrite é assíncrono — refresh token em loop até claim aparecer
+      // (max ~30s; valor típico observado: 4-7s).
+      const maxWaitMs = 30000
+      const pollMs = 2000
+      const start = Date.now()
+      while (Date.now() - start < maxWaitMs) {
+        await new Promise((r) => setTimeout(r, pollMs))
+        await refreshToken()
+        const tr = await auth.currentUser?.getIdTokenResult()
+        const tenantsClaim = (tr?.claims as { tenants?: string[] } | undefined)?.tenants
+        if (tenantsClaim && tenantsClaim.length > 0) {
+          setStatusMsg(null)
+          // useCurrentTenant vai re-renderizar com hasAnyTenant=true; o componente
+          // pai (DashboardPage) trocará automaticamente para TenantDashboard.
+          return
+        }
+      }
+      setStatusMsg(
+        'Tenant criado mas claims ainda não chegaram. Tente recarregar a página em alguns segundos.'
+      )
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setError(msg)
+      setStatusMsg(null)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section style={card}>
+      <h2 style={{ margin: 0, fontSize: 16 }}>Onboarding — criar primeiro tenant</h2>
+      <p style={{ margin: '4px 0 16px', color: '#888', fontSize: 13 }}>
+        Você ainda não pertence a nenhum tenant. Crie agora para acessar o dashboard.
+      </p>
+
+      <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <label style={label}>
+          Nome do tenant
+          <input
+            type="text"
+            required
+            maxLength={100}
+            placeholder="Salão Bella"
+            value={tenantName}
+            onChange={(e) => setTenantName(e.target.value)}
+            style={input}
+          />
+        </label>
+        <label style={label}>
+          Slug
+          <input
+            type="text"
+            required
+            pattern="^[a-z][a-z0-9-]{2,49}$"
+            placeholder="salao-bella"
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+            style={input}
+          />
+          <small style={{ color: '#666' }}>
+            kebab-case, 3-50 chars, começa com letra
+          </small>
+        </label>
+        <label style={label}>
+          Nicho (opcional)
+          <select value={niche} onChange={(e) => setNiche(e.target.value)} style={input}>
+            <option value="">(nenhum)</option>
+            {[
+              'imoveis',
+              'beleza',
+              'tecnico',
+              'saude',
+              'juridico',
+              'pet',
+              'educacao',
+              'nutricao',
+              'engenharia',
+              'fotografia',
+              'gastronomia',
+              'fitness',
+              'financas',
+            ].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <button type="submit" disabled={busy} style={primaryBtn}>
+          {busy ? 'Criando…' : 'Criar tenant'}
+        </button>
+      </form>
+
+      {statusMsg && <p style={infoBox}>{statusMsg}</p>}
+
+      {result && (
+        <div style={successBox}>
+          <strong>Tenant criado ✓</strong>
+          <pre style={{ margin: '8px 0 0', fontSize: 12 }}>
+            {JSON.stringify(result, null, 2)}
+          </pre>
+        </div>
+      )}
+
+      {error && <pre style={errBox}>{error}</pre>}
+    </section>
   )
 }
 
@@ -243,6 +320,16 @@ const successBox: React.CSSProperties = {
   border: '1px solid #14532d',
   color: '#86efac',
   padding: 12,
+  borderRadius: 8,
+  fontSize: 13,
+}
+
+const infoBox: React.CSSProperties = {
+  marginTop: 12,
+  background: '#0f1d2e',
+  border: '1px solid #1e3a5c',
+  color: '#93c5fd',
+  padding: 10,
   borderRadius: 8,
   fontSize: 13,
 }

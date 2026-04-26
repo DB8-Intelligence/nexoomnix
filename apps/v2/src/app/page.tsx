@@ -1,25 +1,28 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { onAuthStateChanged } from 'firebase/auth'
-import { auth } from '@/lib/firebase'
+import { useAuth } from '@/lib/auth-context'
 
 export default function Home() {
   const router = useRouter()
-  const [checking, setChecking] = useState(true)
+  const { user, loading } = useAuth()
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      router.replace(user ? '/dashboard' : '/login')
-      setChecking(false)
-    })
-    return unsub
-  }, [router])
+    if (loading) return
+    router.replace(user ? '/dashboard' : '/login')
+  }, [user, loading, router])
 
   return (
-    <main style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-      <p style={{ color: '#888' }}>{checking ? 'Carregando…' : 'Redirecionando…'}</p>
+    <main
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+      }}
+    >
+      <p style={{ color: '#888' }}>{loading ? 'Carregando…' : 'Redirecionando…'}</p>
     </main>
   )
 }

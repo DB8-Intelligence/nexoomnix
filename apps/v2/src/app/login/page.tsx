@@ -1,22 +1,31 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
+import { useAuth } from '@/lib/auth-context'
 
 type Mode = 'login' | 'signup'
 
 export default function LoginPage() {
   const router = useRouter()
+  const { user, loading } = useAuth()
   const [mode, setMode] = useState<Mode>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Se já estiver autenticado, sair do /login
+  useEffect(() => {
+    if (!loading && user) {
+      router.replace('/dashboard')
+    }
+  }, [user, loading, router])
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -28,7 +37,7 @@ export default function LoginPage() {
       } else {
         await signInWithEmailAndPassword(auth, email, password)
       }
-      router.replace('/dashboard')
+      // AuthContext recebe via onIdTokenChanged; useEffect acima redireciona.
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       setError(msg)
