@@ -10,7 +10,7 @@ O código de domínio do NexoOmnix (multi-tenant SaaS Next.js) cresceu dentro de
 
 - `src/app/api/*` — 53 rotas, algumas com 400+ linhas combinando auth, fetch de tenant, integração com SDK externo e persistência.
 - `src/components/*` — 60 componentes React. Os de feature chegam a 546 linhas (`RedesSociaisView`) e incluem validação, submit e lógica de negócio inline.
-- `src/lib/*` — 18 arquivos com 3.286 linhas no total. Três arquivos concentram 1.863 linhas de configuração por nicho (`niche-config.ts` 603L, `content-personas.ts` 685L, `talking-objects.ts` 575L).
+- `src/lib/*` — vários arquivos com milhares de linhas no total, com forte concentração em configuração por nicho (`niche-config.ts`, `content-personas.ts`).
 
 Sintomas observados:
 
@@ -77,7 +77,7 @@ A refatoração é **incremental**: cada fase preserva comportamento e pode ser 
 
 ### Impacto no comportamento
 
-**Zero mudança funcional nesta fase**. A Fase 0 apenas cria a estrutura de pastas e documentação; não move arquivos existentes nem altera comportamento em produção. A única remoção é código de detecção multi-domain (`domain-config.ts` e redirects correspondentes no middleware) que já estava marcado como legacy em `CLAUDE.md` e nunca dispara em produção, pois os domínios `imobpro.app`, `salaopro.app`, `reelcreator.app` nunca foram registrados.
+**Zero mudança funcional nesta fase**. A Fase 0 apenas cria a estrutura de pastas e documentação; não move arquivos existentes nem altera comportamento em produção. A única remoção é código de detecção multi-domain (`domain-config.ts` e redirects correspondentes no middleware) que já estava marcado como legacy em `CLAUDE.md` e nunca dispara em produção, pois os domínios alternativos (`salaopro.app` e variantes) nunca foram registrados.
 
 ### Critérios de sucesso ao fim da Fase 4
 

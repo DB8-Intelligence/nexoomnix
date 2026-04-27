@@ -42,7 +42,7 @@ O código de domínio hoje está espalhado entre `src/app/api/*`, `src/component
 
 - Rotas API misturam auth + fetch de tenant + integração com SDK externo + persistência no mesmo arquivo.
 - Integrações externas (Stripe, Resend, Anthropic, Fal, ElevenLabs, n8n) são chamadas em pontos diferentes do código sem contract unificado.
-- Configurações por nicho (`niche-config.ts`, `talking-objects.ts`, `content-personas.ts`) concentram milhares de linhas em 3 arquivos.
+- Configurações por nicho (`niche-config.ts`, `content-personas.ts`) concentram milhares de linhas em poucos arquivos.
 - `tenant_id` é refetchado inline em ~19 rotas API.
 
 A modularização resolve isso introduzindo uma camada `src/modules/` organizada por **domínio de negócio**, com separação clara entre interface pública (contracts) e implementação (adapters).
@@ -63,13 +63,12 @@ src/modules/
 │       ├── storage/            # Supabase Storage, R2
 │       └── eventbus/           # n8n webhook emitter
 ├── billing/                    # Domínio de assinatura (checkout, portal, planos)
-├── content/                    # Content AI, personas, reel creator
+├── content/                    # Content AI, personas
 ├── crm/                        # Pipelines, deals, atividades
 ├── agenda/                     # Appointments, scheduling
 ├── clientes/                   # Clientes
 ├── financeiro/                 # Transactions, categorias, contas
 ├── contabilidade/              # NFS-e, obrigações, DRE
-├── imoveis/                    # Properties, templates
 ├── social/                     # Meta autopost, calendário editorial
 └── site-publico/               # /s/[slug]
 ```
@@ -121,7 +120,7 @@ A migração é incremental, em fases que preservam comportamento:
 | 0    | Criar estrutura `modules/` + docs + remover multi-domain legacy  | **em execução** |
 | 1    | `getTenantContext()` e migração das ~19 rotas duplicadas         | pendente        |
 | 2    | Contracts de Email, Billing, AI, EventBus + adapters atuais      | pendente        |
-| 3    | Quebrar `niche-config`, `talking-objects`, `content-personas`    | pendente        |
+| 3    | Quebrar `niche-config`, `content-personas`                       | pendente        |
 | 4    | Extrair domínios pesados (billing, content, crm, agenda)         | pendente        |
 | 5    | Middleware slim (<50 linhas)                                     | pendente        |
 | 6    | Logger, Result type, error boundary padronizado                  | pendente        |

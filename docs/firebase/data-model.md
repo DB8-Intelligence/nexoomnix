@@ -127,7 +127,7 @@ Sincronizar claims do JWT do Firebase Auth com membership ativos:
 |---|---|---|
 | `name` | string | nome de exibição |
 | `slug` | string | URL-friendly, único — `where('slug','==',...)` |
-| `niche` | string | enum: `imoveis\|beleza\|tecnico\|...` (ver V1) |
+| `niche` | string | enum: `beleza\|tecnico\|saude\|juridico\|pet\|educacao\|nutricao\|engenharia\|fotografia\|gastronomia\|fitness\|financas` |
 | `plan` | string | `trial\|starter\|pro\|pro_plus\|pro_max\|enterprise` |
 | `planPriceId` | string? | Stripe price ID quando aplicável |
 | `stripeCustomerId` | string? | quando entra checkout pela primeira vez |
@@ -135,7 +135,6 @@ Sincronizar claims do JWT do Firebase Auth com membership ativos:
 | `trialEndsAt` | Timestamp? | quando trial expira |
 | `branding` | map | `{ primaryColor, logoUrl, brandVoice }` (subset; campos ricos podem ir em subcollection) |
 | `whatsappNumber` | string? | E.164 |
-| `addonTalkingObjects` | boolean | add-on flag |
 | `simulateAi` | boolean | analog ao `SIMULATE_AI` env mas por tenant (debug) |
 | `createdAt` / `updatedAt` | Timestamp | server-set |
 | `deletedAt` | Timestamp? | soft delete |
@@ -306,7 +305,6 @@ Sincronizar claims do JWT do Firebase Auth com membership ativos:
 | `images` | array<{path, generatedAt}> | refs em Storage |
 | `voiceUrl` | string? | path em Storage |
 | `videoUrl` | string? | path em Storage |
-| `talkingObject` | map? | personagem selecionado |
 | `error` | string? | quando status=failed |
 | `costSummary` | map | breakdown {anthropic, fal, tts} |
 | `lastHeartbeatAt` | Timestamp? | server atualiza a cada ~10s durante execução |
@@ -680,7 +678,6 @@ service firebase.storage {
     "brandVoice": "Acolhedor, descontraído"
   },
   "whatsappNumber": "+5571999999999",
-  "addonTalkingObjects": true,
   "simulateAi": false,
   "createdAt": "2026-04-01T08:00:00Z",
   "updatedAt": "2026-04-26T10:00:00Z"
@@ -716,7 +713,6 @@ service firebase.storage {
   ],
   "voiceUrl": "tenants/tnt_BRkz9p/content_jobs/job_xpto/voice.mp3",
   "videoUrl": "tenants/tnt_BRkz9p/content_jobs/job_xpto/final.mp4",
-  "talkingObject": { "id": "scissors", "name": "Tesoura Mágica" },
   "costSummary": { "anthropic": 0.012, "fal": 0.18, "tts": 0.05 },
   "createdAt": "2026-04-26T10:30:00Z",
   "completedAt": "2026-04-26T10:34:21Z",

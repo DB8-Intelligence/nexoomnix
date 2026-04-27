@@ -85,7 +85,7 @@ User entra em `/cadastro` → cria conta (email/senha ou Google OAuth) → escol
 
 ### Comportamento V1 (Supabase, hoje)
 
-User no tenant T navega para `/reel-creator` ou `/conteudo` → insere link/texto/nicho → click "Gerar". Cliente chama `/api/content-ai/analyze` (passa por `guardAICall` rate limit + plan gate). Backend chama Anthropic, retorna `analysis`. Cliente chama `/api/content-ai/generate-package` → múltiplas chamadas Fal.ai + ElevenLabs/OpenAI TTS → FFmpeg assembly no db8-agent → URL final retornada. Status persistido em `content_projects` row.
+User no tenant T navega para `/conteudo` → insere link/texto/nicho → click "Gerar". Cliente chama `/api/content-ai/analyze` (passa por `guardAICall` rate limit + plan gate). Backend chama Anthropic, retorna `analysis`. Cliente chama `/api/content-ai/generate-package` → múltiplas chamadas Fal.ai + ElevenLabs/OpenAI TTS → FFmpeg assembly no db8-agent → URL final retornada. Status persistido em `content_projects` row.
 
 ### Sequência V2 proposta
 

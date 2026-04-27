@@ -120,7 +120,7 @@ gcloud services enable \
 ### Variáveis
 
 ```bash
-PROJECT_ID="viralreel-ai-493701"     # smoke test compartilha projeto ViralObj; novo projeto db8-nexoomnix antes de A4
+PROJECT_ID="viralreel-ai-493701"     # projeto GCP residual usado em smoke A1-A2; produção em db8-nexoomnix
 REGION="us-central1"                 # ou southamerica-east1 (BR latência menor)
 SERVICE="nexoomnix-web-smoke"        # smoke; production será "nexoomnix-web"
 ```

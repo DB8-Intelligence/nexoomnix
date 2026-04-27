@@ -34,9 +34,8 @@ const db = admin.firestore()
 // kebab-case 3-50 chars, começa com letra, [a-z0-9-]
 const SLUG_REGEX = /^[a-z][a-z0-9-]{2,49}$/
 
-// Mesmo enum do V1 (CLAUDE.md + migration 010)
+// Mesmo enum do V1 (CLAUDE.md). Nicho `imoveis` removido do escopo.
 const VALID_NICHES = new Set([
-  'imoveis',
   'beleza',
   'tecnico',
   'saude',
@@ -165,7 +164,6 @@ export const createTenant = functions
         stripeCustomerId: null,
         stripeSubscriptionId: null,
         trialEndsAt: null,
-        addonTalkingObjects: false,
         simulateAi: false,
         whatsappNumber: null,
         branding: null,
