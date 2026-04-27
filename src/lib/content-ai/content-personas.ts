@@ -27,7 +27,6 @@ export type PersonaId =
   | 'saude'
   | 'beleza'
   | 'juridico'
-  | 'imoveis'
   | 'educacao'
   | 'pet'
   | 'personalizado'
@@ -462,54 +461,6 @@ export const CONTENT_PERSONAS: Record<PersonaId, ContentPersona> = {
     ],
   },
 
-  imoveis: {
-    id: 'imoveis',
-    name: 'Imóveis & Corretagem',
-    tagline: 'Chaves e documentos que guiam clientes na conquista do imóvel próprio',
-    emoji: '🏠',
-    defaultStyle: 'pixar-3d',
-    defaultExpression: 'alegre',
-    contentTone: 'inspirador',
-    scriptFormula: 'Oi! Eu sou a [CHAVE/DOCUMENTO] do apartamento dos seus sonhos! → Veja o que você precisa saber para [COMPRAR/ALUGAR/INVESTIR]. → Fala comigo hoje mesmo!',
-    objectTypes: [
-      'Chave de casa dourada',
-      'Placa VENDIDO / ALUGADO',
-      'Contrato de compra e venda',
-      'Planta baixa animada',
-      'Imóvel com face expressiva',
-    ],
-    environments: [
-      'Fachada de imóvel moderno',
-      'Interior de apartamento decorado',
-      'Cartório de imóveis',
-      'Escritório de imobiliária',
-      'Rua residencial com casas',
-    ],
-    bioTemplate: '🏠 Realizando o sonho da casa própria\n🔑 [ESPECIALIDADE] em [CIDADE/BAIRRO]\n📊 [X] imóveis vendidos\n📲 Busca gratuita: [LINK]',
-    ctaOptions: [
-      'Me chama no WhatsApp e encontro o imóvel ideal pra você 🔑',
-      'Salva pra quando estiver pronto para comprar 📌',
-      'Comenta "QUERO" e te envio os melhores imóveis do momento 🏠',
-    ],
-    hashtagStrategy: {
-      primary: ['#imoveis', '#casa', '#apartamento', '#corretordeimoveis', '#imobiliaria'],
-      secondary: ['#comprarcasa', '#aluguel', '#imoveisabrasil', '#mercadoimobiliario', '#investimentoimobiliario'],
-      niche: ['#casapropia', '#imoveisdeluxo', '#imoveisnovos', '#financiamento', '#imoveisalugar'],
-    },
-    contentPillars: [
-      'Dicas para comprar o primeiro imóvel',
-      'Comparativo aluguel vs compra',
-      'Apresentação de imóveis disponíveis',
-      'Processo de financiamento descomplicado',
-      'Tendências do mercado imobiliário local',
-    ],
-    captionHooks: [
-      'Essa chave pode ser sua ainda este ano — veja como 🔑',
-      '[X] erros que quase todo comprador de imóvel comete 🏠',
-      'O mercado imobiliário está assim em [MÊS] e você precisa saber 📊',
-    ],
-  },
-
   educacao: {
     id: 'educacao',
     name: 'Educação & Cursos',
@@ -645,7 +596,6 @@ export function getPersonaForNiche(niche: string): ContentPersona {
     beleza:      'beleza',
     tecnico:     'tecnico',
     juridico:    'juridico',
-    imoveis:     'imoveis',
     educacao:    'educacao',
     pet:         'pet',
     engenharia:  'tecnico',

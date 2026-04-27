@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ShoppingCart, Home, CalendarCheck, ArrowRight, Sparkles } from 'lucide-react'
+import { ShoppingCart, CalendarCheck, ArrowRight, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { CrmType } from '@/types/database'
 
@@ -22,15 +22,6 @@ const CRM_OPTIONS: {
     stages: ['Novo Lead', 'Primeiro Contato', 'Qualificado', 'Proposta Enviada', 'Negociacao', 'Fechado Ganho', 'Perdido'],
     features: ['Funil Kanban drag & drop', 'Valor estimado por deal', 'Taxa de conversao', 'Motivo de perda obrigatorio'],
     color: '#3b82f6',
-  },
-  {
-    type: 'imobiliario',
-    title: 'CRM Imobiliario',
-    description: 'Pipeline especializado para corretores de imoveis. Controle de visitas, tipo de interesse e match de imoveis.',
-    icon: <Home className="w-6 h-6" />,
-    stages: ['Lead Captado', 'Contato Inicial', 'Visita Agendada', 'Visita Realizada', 'Proposta', 'Documentacao', 'Fechado', 'Desistencia'],
-    features: ['Tipo de interesse (Compra/Aluguel)', 'Faixa de preco do cliente', 'Areas de preferencia', 'Vinculo com imoveis'],
-    color: '#059669',
   },
   {
     type: 'atendimento',
@@ -70,7 +61,7 @@ export function CrmTypeSelector({ suggestedType, onSelect, primaryColor }: CrmTy
         <p className="text-gray-500">Selecione o modelo que melhor se adapta ao seu negocio. Voce pode trocar depois nas configuracoes.</p>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4 mb-8">
+      <div className="grid md:grid-cols-2 gap-4 mb-8">
         {CRM_OPTIONS.map(option => (
           <button
             key={option.type}

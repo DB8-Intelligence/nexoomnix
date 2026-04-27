@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import {
   Share2, Instagram, Facebook, Sparkles, Lock, Calendar,
   Image as ImageIcon, Plus, CheckCircle, Clock, AlertCircle,
-  ExternalLink, Film, Zap, Send, RefreshCw,
+  ExternalLink, Zap, Send, RefreshCw,
 } from 'lucide-react'
 import Link from 'next/link'
 import { MetaConnectButton } from '@/components/content-ai/MetaConnectButton'
@@ -252,11 +252,11 @@ export function RedesSociaisView({ isPro, isProMax }: RedesSociaisViewProps) {
               {hoje.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
             </p>
             <Link
-              href="/reel-creator"
+              href="/conteudo"
               className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700"
             >
               <Plus className="w-3.5 h-3.5" />
-              Novo reel
+              Novo conteúdo
             </Link>
           </div>
 
@@ -312,71 +312,16 @@ export function RedesSociaisView({ isPro, isProMax }: RedesSociaisViewProps) {
           ) : (
             <div className="mt-6 text-center py-8 text-gray-400 text-sm">
               <Calendar className="w-8 h-8 mx-auto mb-2 text-gray-200" />
-              {isProMax
-                ? 'Nenhum post agendado. Use o ReelCreator para criar e agendar conteúdo.'
-                : 'Crie conteúdo com IA para preencher seu calendário.'
-              }
+              Crie conteúdo com IA para preencher seu calendário.
             </div>
           )}
-
-          {/* Quick actions */}
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <Link
-              href="/reel-creator"
-              className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl hover:bg-blue-100 transition-colors"
-            >
-              <Film className="w-4 h-4 text-blue-600" />
-              <div>
-                <p className="text-xs font-semibold text-blue-800">ReelCreator AI</p>
-                <p className="text-[10px] text-blue-600">Criar reel completo</p>
-              </div>
-            </Link>
-            <Link
-              href="/reel-creator/analisar"
-              className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-100 rounded-xl hover:bg-amber-100 transition-colors"
-            >
-              <Zap className="w-4 h-4 text-amber-600" />
-              <div>
-                <p className="text-xs font-semibold text-amber-800">Analisar por Link</p>
-                <p className="text-[10px] text-amber-600">Recriar reel viral</p>
-              </div>
-            </Link>
-          </div>
         </div>
       )}
 
       {/* ── Criar com IA ────────────────────────────────────── */}
       {tab === 'criar' && (
         <div className="space-y-5">
-          {/* Quick access cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Link
-              href="/reel-creator"
-              className="flex items-start gap-3 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-xl hover:shadow-sm transition-shadow"
-            >
-              <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shrink-0">
-                <Film className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-900">ReelCreator AI</p>
-                <p className="text-xs text-gray-500 mt-0.5">Roteiro completo, prompts de imagem, narração, CTA e legenda</p>
-              </div>
-            </Link>
-            <Link
-              href="/reel-creator/analisar"
-              className="flex items-start gap-3 p-4 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100 rounded-xl hover:shadow-sm transition-shadow"
-            >
-              <div className="w-9 h-9 bg-amber-500 rounded-xl flex items-center justify-center shrink-0">
-                <Zap className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-900">Analisar Reel por Link</p>
-                <p className="text-xs text-gray-500 mt-0.5">Cole o link de qualquer reel viral e recrie adaptado ao seu nicho</p>
-              </div>
-            </Link>
-          </div>
-
-          <div className="border-t border-gray-100 pt-4">
+          <div>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Gerador rápido de ideias</p>
             <div>
               <div className="flex gap-2">
@@ -418,10 +363,10 @@ export function RedesSociaisView({ isPro, isProMax }: RedesSociaisViewProps) {
                     ))}
                   </div>
                   <Link
-                    href={`/reel-creator?tema=${encodeURIComponent(ideia.titulo)}`}
+                    href={`/conteudo?tema=${encodeURIComponent(ideia.titulo)}`}
                     className="block text-center px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700"
                   >
-                    Criar com ReelCreator AI
+                    Criar com IA
                   </Link>
                 </div>
               ))}
@@ -453,7 +398,7 @@ export function RedesSociaisView({ isPro, isProMax }: RedesSociaisViewProps) {
                 <ul className="space-y-1 list-disc list-inside">
                   <li>Clique em <strong>Conectar</strong> para autorizar via Facebook OAuth</li>
                   <li>Suas páginas do Facebook e contas Instagram Business são importadas automaticamente</li>
-                  <li>No ReelCreator AI, após gerar o conteúdo, use o botão <strong>Auto-publicar</strong></li>
+                  <li>Após gerar o conteúdo, use o botão <strong>Auto-publicar</strong></li>
                   <li>Escolha entre publicar agora ou agendar para um horário específico</li>
                 </ul>
                 <p className="text-gray-500 pt-1">
@@ -534,7 +479,7 @@ export function RedesSociaisView({ isPro, isProMax }: RedesSociaisViewProps) {
               <Send className="w-8 h-8 mx-auto mb-2 text-gray-200" />
               Nenhum post publicado ainda.
               <br />
-              <Link href="/reel-creator" className="text-blue-500 hover:underline text-xs mt-1 inline-block">
+              <Link href="/conteudo" className="text-blue-500 hover:underline text-xs mt-1 inline-block">
                 Criar e publicar agora →
               </Link>
             </div>

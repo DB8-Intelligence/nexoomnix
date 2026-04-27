@@ -18,7 +18,6 @@ const PUBLIC_ROUTES = [
   '/salaopro',
   '/clinicapro',
   '/ordemdeservico',
-  '/imobpro',
   '/juridicpro',
   '/petpro',
   '/educapro',
@@ -28,11 +27,23 @@ const PUBLIC_ROUTES = [
   '/gastronomia',
   '/fitness',
   '/financas',
-  '/reelcreator',
 ]
+
+// Rotas removidas do escopo do produto — redirect 301 pra raiz.
+// Mantidas como redirect (não 404) para preservar links externos durante janela de SEO.
+// Páginas internas serão deletadas em Sprint Cleanup futura.
+const REMOVED_PATH_PREFIXES = ['/imobpro', '/reelcreator']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // Rotas fora de escopo → 301 pra home (preserva backlinks)
+  if (REMOVED_PATH_PREFIXES.some(p => pathname === p || pathname.startsWith(p + '/'))) {
+    const homeUrl = request.nextUrl.clone()
+    homeUrl.pathname = '/'
+    homeUrl.search = ''
+    return NextResponse.redirect(homeUrl, 301)
+  }
 
   // Site público dos clientes — sempre acessível
   if (pathname.startsWith('/s/')) {

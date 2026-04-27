@@ -5,12 +5,6 @@ import { createClient } from '@/lib/supabase/server'
 import { DashboardShell } from '@/components/dashboard/DashboardShell'
 import { isDb8Staff } from '@/lib/staff'
 
-// Plataforma opera em domínio único (nexoomnix.com). O prop productMode continua
-// existindo no DashboardShell/Sidebar por enquanto para evitar cascata de mudanças;
-// numa fase futura o prop pode ser removido quando o branch isReelCreator da Sidebar
-// também for limpo.
-const PRODUCT_MODE = 'nexoomnix'
-
 export default async function DashboardLayout({
   children,
 }: {
@@ -36,7 +30,7 @@ export default async function DashboardLayout({
   const isStaff = isDb8Staff(user.email)
 
   return (
-    <DashboardShell tenant={tenant} profile={profile} productMode={PRODUCT_MODE} isStaff={isStaff}>
+    <DashboardShell tenant={tenant} profile={profile} isStaff={isStaff}>
       {children}
     </DashboardShell>
   )

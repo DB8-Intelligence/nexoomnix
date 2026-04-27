@@ -6,22 +6,18 @@ import { useAuth } from '@/hooks/useAuth'
 import { LinkInput } from './LinkInput'
 import { AnalysisResult } from './AnalysisResult'
 import { NichoConfig } from './NichoConfig'
-import { TalkingObjectSelector } from './TalkingObjectSelector'
 import { ImageGallery } from './ImageGallery'
 import { PackagePreview } from './PackagePreview'
 import { DeliveryScreen } from './DeliveryScreen'
-import { getTalkingObjectsForNiche } from '@/lib/content-ai/talking-objects'
 import type { ContentProject } from '@/types/database'
-import type { TalkingObject } from '@/lib/content-ai/talking-objects'
 import { cn } from '@/lib/utils'
 
-type WizardStep = 'input' | 'analysis' | 'config' | 'talking_object' | 'images' | 'package' | 'delivery'
+type WizardStep = 'input' | 'analysis' | 'config' | 'images' | 'package' | 'delivery'
 
 const STEPS: { key: WizardStep; label: string }[] = [
   { key: 'input', label: 'Fonte' },
   { key: 'analysis', label: 'Análise' },
   { key: 'config', label: 'Formato' },
-  { key: 'talking_object', label: 'Personagem' },
   { key: 'images', label: 'Imagens' },
   { key: 'package', label: 'Textos' },
   { key: 'delivery', label: 'Pronto' },
@@ -72,7 +68,6 @@ export function ContentWizard() {
   const [step, setStep] = useState<WizardStep>('input')
   const [project, setProject] = useState<ContentProject | null>(null)
   const [formato, setFormato] = useState('reel')
-  const [selectedObject, setSelectedObject] = useState<TalkingObject | null>(null)
   const [loading, setLoading] = useState(false)
 
   async function handleInputSubmit(data: { nicho: string; source_url?: string; source_description?: string }) {
@@ -107,15 +102,6 @@ export function ContentWizard() {
     await updateProject(project.id, { formato })
     setProject(prev => prev ? { ...prev, formato } : prev)
     setLoading(false)
-    setStep('talking_object')
-  }
-
-  async function handleObjectContinue() {
-    if (!project) return
-    if (selectedObject) {
-      await updateProject(project.id, { talking_object_selected: selectedObject })
-      setProject(prev => prev ? { ...prev, talking_object_selected: selectedObject } : prev)
-    }
     setStep('images')
   }
 
@@ -145,10 +131,7 @@ export function ContentWizard() {
     setStep('input')
     setProject(null)
     setFormato('reel')
-    setSelectedObject(null)
   }
-
-  const talkingObjects = project?.nicho ? getTalkingObjectsForNiche(project.nicho) : []
 
   return (
     <div className="max-w-2xl">
@@ -182,24 +165,12 @@ export function ContentWizard() {
         />
       )}
 
-      {step === 'talking_object' && (
-        <TalkingObjectSelector
-          nicho={project?.nicho ?? ''}
-          objects={talkingObjects}
-          selected={selectedObject}
-          onSelect={setSelectedObject}
-          onContinue={handleObjectContinue}
-          onBack={() => setStep('config')}
-          loading={loading}
-        />
-      )}
-
       {step === 'images' && project && (
         <ImageGallery
           project={project}
           onGenerateImages={handleGenerateImages}
           onContinue={() => setStep('package')}
-          onBack={() => setStep('talking_object')}
+          onBack={() => setStep('config')}
           loading={loading}
         />
       )}

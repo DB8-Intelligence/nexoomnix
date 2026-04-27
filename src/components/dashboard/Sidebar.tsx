@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import {
   Zap, Calendar, Users, DollarSign, BarChart3, FileText,
   Share2, Globe, Bot, Bell, Settings, X, ChevronRight,
-  ClipboardList, Home, BookOpen, Package, Sparkles, CreditCard, PieChart, Film, FlaskConical, Kanban, Bug
+  ClipboardList, BookOpen, Package, Sparkles, CreditCard, PieChart, FlaskConical, Kanban, Bug
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getNicheConfig } from '@/lib/niche-config'
@@ -15,7 +15,6 @@ interface SidebarProps {
   tenant: Tenant
   open: boolean
   onClose: () => void
-  productMode?: string
   isStaff?: boolean
 }
 
@@ -33,9 +32,7 @@ function getNavItems(tenant: Tenant): NavItem[] {
   // Módulo de agenda/OS muda por nicho
   const agendaItem: NavItem = niche === 'tecnico'
     ? { href: '/agenda', label: 'Ordens de Serviço', icon: <ClipboardList className="w-4 h-4" />, requiredModule: 'agenda' }
-    : niche === 'imoveis'
-      ? { href: '/agenda', label: 'Visitas', icon: <Calendar className="w-4 h-4" />, requiredModule: 'agenda' }
-      : { href: '/agenda', label: 'Omnix Agenda', icon: <Calendar className="w-4 h-4" />, requiredModule: 'agenda' }
+    : { href: '/agenda', label: 'Omnix Agenda', icon: <Calendar className="w-4 h-4" />, requiredModule: 'agenda' }
 
   const clientsItem: NavItem = {
     href: '/clientes',
@@ -58,14 +55,11 @@ function getNavItems(tenant: Tenant): NavItem[] {
     agendaItem,
     clientsItem,
     crmItem,
-    ...(niche === 'juridico' || niche === 'imoveis' ? [
+    ...(niche === 'juridico' ? [
       { href: '/documentos', label: 'Documentos', icon: <FileText className="w-4 h-4" />, requiredModule: 'documentos' },
     ] : []),
     ...(niche === 'tecnico' || niche === 'pet' ? [
       { href: '/estoque', label: 'Estoque', icon: <Package className="w-4 h-4" />, requiredModule: 'estoque' },
-    ] : []),
-    ...(niche === 'imoveis' ? [
-      { href: '/imoveis', label: 'Imóveis', icon: <Home className="w-4 h-4" />, requiredModule: 'imoveis' },
     ] : []),
     ...(niche === 'educacao' ? [
       { href: '/cursos', label: 'Cursos / Turmas', icon: <BookOpen className="w-4 h-4" />, requiredModule: 'cursos' },
@@ -74,26 +68,16 @@ function getNavItems(tenant: Tenant): NavItem[] {
     { href: '/relatorios', label: 'Relatórios', icon: <PieChart className="w-4 h-4" />, requiredModule: 'contabilidade', badge: 'Pro+' },
     { href: '/contabilidade', label: 'Contabilidade', icon: <BarChart3 className="w-4 h-4" />, requiredModule: 'contabilidade', badge: 'Pro+' },
     { href: '/conteudo', label: 'Omnix Content', icon: <Sparkles className="w-4 h-4" />, requiredModule: 'content_ai', badge: 'Pro' },
-    { href: '/reel-creator', label: 'Omnix Reels', icon: <Film className="w-4 h-4" />, requiredModule: 'content_ai', badge: 'Pro' },
-    { href: '/reel-creator/analisar', label: 'Analisar por Link', icon: <Zap className="w-4 h-4" />, requiredModule: 'content_ai', badge: 'Pro' },
     { href: '/redes-sociais', label: 'Omnix Social', icon: <Share2 className="w-4 h-4" />, requiredModule: 'social', badge: 'Pro' },
     { href: '/site-publico', label: 'Omnix Sites', icon: <Globe className="w-4 h-4" />, requiredModule: 'site', badge: 'Pro' },
     { href: '/ia-contador', label: 'IA Contador', icon: <Bot className="w-4 h-4" />, requiredModule: 'ia_contador', badge: 'Enterprise' },
   ]
 }
 
-const REELCREATOR_NAV: NavItem[] = [
-  { href: '/reel-creator',         label: 'Omnix Reels',       icon: <Film className="w-4 h-4" />,     requiredModule: 'content_ai' },
-  { href: '/reel-creator/analisar',label: 'Analisar por Link', icon: <Zap className="w-4 h-4" />,      requiredModule: 'content_ai', badge: 'Pro' },
-  { href: '/conteudo',             label: 'Omnix Content',     icon: <Sparkles className="w-4 h-4" />, requiredModule: 'content_ai' },
-  { href: '/redes-sociais',        label: 'Omnix Social',      icon: <Share2 className="w-4 h-4" />,   requiredModule: 'social',     badge: 'Pro' },
-]
-
-export function Sidebar({ tenant, open, onClose, productMode = 'nexoomnix', isStaff = false }: SidebarProps) {
+export function Sidebar({ tenant, open, onClose, isStaff = false }: SidebarProps) {
   const pathname = usePathname()
   const niche = getNicheConfig(tenant.niche)
-  const isReelCreator = productMode === 'reelcreator'
-  const navItems = isReelCreator ? REELCREATOR_NAV : getNavItems(tenant)
+  const navItems = getNavItems(tenant)
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
@@ -108,15 +92,15 @@ export function Sidebar({ tenant, open, onClose, productMode = 'nexoomnix', isSt
               data-color={niche.primaryColor}
               style={{ backgroundColor: niche.primaryColor }} // dynamic brand color — cannot be a Tailwind class
             >
-              {isReelCreator ? <Film className="w-4 h-4 text-white" /> : <Zap className="w-4 h-4 text-white" />}
+              <Zap className="w-4 h-4 text-white" />
             </div>
           )}
           <div className="min-w-0">
             <div className="font-bold text-gray-900 text-sm truncate">
-              {isReelCreator ? 'ReelCreator AI' : tenant.name}
+              {tenant.name}
             </div>
             <div className="text-xs text-gray-400 truncate">
-              {isReelCreator ? 'by NexoOmnix' : niche.brandName}
+              {niche.brandName}
             </div>
           </div>
         </Link>

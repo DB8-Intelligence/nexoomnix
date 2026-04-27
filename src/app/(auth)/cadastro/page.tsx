@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  Zap, Scissors, Wrench, Stethoscope, Scale, Home, PawPrint,
+  Zap, Scissors, Wrench, Stethoscope, Scale, PawPrint,
   GraduationCap, Apple, HardHat, Camera, UtensilsCrossed, Dumbbell, Calculator,
   CheckCircle2, ChevronRight, Loader2, Eye, EyeOff
 } from 'lucide-react'
@@ -24,7 +24,6 @@ const NICHE_ICONS: Record<NicheSlug, React.ReactNode> = {
   tecnico:     <Wrench className="w-6 h-6" />,
   saude:       <Stethoscope className="w-6 h-6" />,
   juridico:    <Scale className="w-6 h-6" />,
-  imoveis:     <Home className="w-6 h-6" />,
   pet:         <PawPrint className="w-6 h-6" />,
   educacao:    <GraduationCap className="w-6 h-6" />,
   nutricao:    <Apple className="w-6 h-6" />,

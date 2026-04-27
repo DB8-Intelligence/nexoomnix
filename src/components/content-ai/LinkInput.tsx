@@ -5,7 +5,6 @@ import { Link, FileText, ArrowRight, Pencil } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NICHO_OPTIONS = [
-  { value: 'imoveis',     label: 'Imóveis' },
   { value: 'beleza',      label: 'Beleza & Estética' },
   { value: 'saude',       label: 'Saúde & Clínica' },
   { value: 'juridico',    label: 'Jurídico' },
