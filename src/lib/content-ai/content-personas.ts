@@ -16,7 +16,15 @@
  *  - @objetos_falando (3.8K avg)        → persona 'humor'
  */
 
-import type { CharacterStyle, CharacterExpression } from './reel-references/reference-styles'
+export type CharacterStyle =
+  | 'fotorrealista'
+  | 'miniatura-acao'
+  | 'pixar-3d'
+  | 'pixar-acao'
+  | 'pixar-antagonista'
+  | 'pixar-humano'
+
+export type CharacterExpression = 'raiva' | 'chocado' | 'determinado' | 'alegre' | 'irritado'
 
 export type PersonaId =
   | 'financeiro'
