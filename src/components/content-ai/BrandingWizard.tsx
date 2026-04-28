@@ -93,7 +93,7 @@ export function BrandingWizard({ businessName, niche, onComplete }: BrandingWiza
           </div>
           <h2 className="text-xl font-bold">Vamos conhecer seu negócio</h2>
           <p className="text-sm opacity-80 mt-0.5">
-            Com isso, cada reel gerado será personalizado para <strong>{businessName}</strong>
+            Com isso, cada conteúdo gerado será personalizado para <strong>{businessName}</strong>
           </p>
 
           {/* Step indicators */}
@@ -246,7 +246,7 @@ export function BrandingWizard({ businessName, niche, onComplete }: BrandingWiza
             ) : step < 3 ? (
               <>Continuar <ChevronRight className="w-4 h-4" /></>
             ) : (
-              <><Sparkles className="w-4 h-4" /> Pronto! Gerar meu primeiro reel</>
+              <><Sparkles className="w-4 h-4" /> Pronto! Gerar meu primeiro conteúdo</>
             )}
           </button>
         </div>

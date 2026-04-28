@@ -9,7 +9,6 @@ interface ScheduleRequest {
   mediaType: 'image' | 'video' | 'carousel' | 'reel'
   hashtags?: string[]
   scheduledFor: string    // ISO timestamp
-  reelCreatorContent?: Record<string, unknown>
 }
 
 // POST — agendar post para publicação futura
@@ -27,7 +26,7 @@ export async function POST(req: Request) {
   }
 
   const body: ScheduleRequest = await req.json()
-  const { connectionId, caption, mediaUrls, mediaType, hashtags = [], scheduledFor, reelCreatorContent } = body
+  const { connectionId, caption, mediaUrls, mediaType, hashtags = [], scheduledFor } = body
 
   if (!connectionId || !caption || !mediaUrls?.length || !scheduledFor) {
     return NextResponse.json(
@@ -75,7 +74,6 @@ export async function POST(req: Request) {
       hashtags,
       status: 'scheduled',
       scheduled_for: scheduleDate.toISOString(),
-      reel_creator_content: reelCreatorContent ?? null,
     })
     .select()
     .single()

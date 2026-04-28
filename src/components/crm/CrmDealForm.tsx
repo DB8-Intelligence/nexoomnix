@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X, User, Phone, Mail, MessageCircle, DollarSign, Tag, Calendar } from 'lucide-react'
-import type { CrmChannelType, DealPriority, CrmType, Client } from '@/types/database'
+import type { CrmChannelType, DealPriority, Client } from '@/types/database'
 import type { DealFormData } from '@/hooks/useCrm'
 
 const CHANNELS: { value: CrmChannelType; label: string; icon: string }[] = [
@@ -28,14 +28,13 @@ interface CrmDealFormProps {
   isOpen: boolean
   onClose: () => void
   onSubmit: (data: DealFormData) => Promise<void>
-  crmType: CrmType
   clients: Client[]
   initialData?: Partial<DealFormData>
   isEditing?: boolean
 }
 
 export function CrmDealForm({
-  isOpen, onClose, onSubmit, crmType, clients, initialData, isEditing,
+  isOpen, onClose, onSubmit, clients, initialData, isEditing,
 }: CrmDealFormProps) {
   const [saving, setSaving] = useState(false)
   const [tagInput, setTagInput] = useState('')
@@ -55,11 +54,6 @@ export function CrmDealForm({
     client_id: null,
     tags: [],
     notes: null,
-    property_id: null,
-    interest_type: null,
-    price_min: null,
-    price_max: null,
-    preferred_areas: [],
   })
 
   useEffect(() => {
@@ -71,8 +65,7 @@ export function CrmDealForm({
         contact_email: null, contact_whatsapp: null, estimated_value: 0,
         source_channel: 'whatsapp', source_detail: null, priority: 'media',
         assigned_to: null, expected_close_at: null, client_id: null,
-        tags: [], notes: null, property_id: null, interest_type: null,
-        price_min: null, price_max: null, preferred_areas: [],
+        tags: [], notes: null,
       })
     }
   }, [initialData, isOpen])
@@ -255,48 +248,6 @@ export function CrmDealForm({
               </select>
             </div>
           </div>
-
-          {/* Imobiliario-specific fields */}
-          {crmType === 'imobiliario' && (
-            <div className="border-t border-gray-100 pt-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Dados Imobiliarios</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Tipo de interesse</label>
-                  <select
-                    value={form.interest_type ?? ''}
-                    onChange={e => setForm(prev => ({ ...prev, interest_type: e.target.value || null }))}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm"
-                  >
-                    <option value="">Selecionar</option>
-                    <option value="compra">Compra</option>
-                    <option value="aluguel">Aluguel</option>
-                    <option value="avaliacao">Avaliacao</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Faixa de preco (min)</label>
-                  <input
-                    type="number" step="1000" min="0"
-                    value={form.price_min ?? ''}
-                    onChange={e => setForm(prev => ({ ...prev, price_min: parseFloat(e.target.value) || null }))}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm"
-                    placeholder="R$ min"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Faixa de preco (max)</label>
-                  <input
-                    type="number" step="1000" min="0"
-                    value={form.price_max ?? ''}
-                    onChange={e => setForm(prev => ({ ...prev, price_max: parseFloat(e.target.value) || null }))}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm"
-                    placeholder="R$ max"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Expected close date */}
           <div>

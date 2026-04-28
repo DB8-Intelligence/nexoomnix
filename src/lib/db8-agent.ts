@@ -53,31 +53,6 @@ export async function db8Upload<T = unknown>(path: string, formData: FormData): 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface Db8CaptionRequest {
-  tenant_id: string
-  property_id: string
-  title: string
-  description: string
-  price?: string
-  city?: string
-  neighborhood?: string
-  property_type?: string
-  highlights?: string
-  niche?: string
-}
-
-export interface Db8CaptionResponse {
-  caption: string
-  hashtags: string[]
-  cta: string
-}
-
-export interface Db8VideoResponse {
-  job_id: string
-  status: 'queued' | 'processing' | 'ready' | 'failed'
-  video_url?: string
-}
-
 export interface Db8ContentRequest {
   tenant_id: string
   project_id: string

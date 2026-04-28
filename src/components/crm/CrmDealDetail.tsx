@@ -4,13 +4,13 @@ import { useState, useEffect } from 'react'
 import {
   X, User, Phone, Mail, MessageCircle, DollarSign,
   Clock, Tag, ArrowRight, Trash2, XCircle, ChevronDown,
-  MapPin, Home, Calendar, StickyNote
+  Calendar, StickyNote
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CrmActivityTimeline } from './CrmActivityTimeline'
 import { CrmMessageComposer } from './CrmMessageComposer'
 import type {
-  CrmDeal, CrmStage, CrmType, CrmActivity,
+  CrmDeal, CrmStage, CrmActivity,
   CrmMessage, CrmChannelType, CrmActivityType, CrmMessageTemplate
 } from '@/types/database'
 import type { DealFormData } from '@/hooks/useCrm'
@@ -24,7 +24,6 @@ const CHANNEL_LABELS: Record<CrmChannelType, string> = {
 interface CrmDealDetailProps {
   deal: CrmDeal
   stages: CrmStage[]
-  crmType: CrmType
   onClose: () => void
   onUpdate: (data: Partial<DealFormData>) => Promise<void>
   onMove: (stageId: string) => Promise<void>
@@ -40,7 +39,7 @@ interface CrmDealDetailProps {
 type TabType = 'timeline' | 'messages' | 'details'
 
 export function CrmDealDetail({
-  deal, stages, crmType, onClose, onUpdate, onMove, onDelete,
+  deal, stages, onClose, onUpdate, onMove, onDelete,
   onCloseLost, onAddActivity, onSendMessage, onFetchActivities, onFetchMessages,
   primaryColor,
 }: CrmDealDetailProps) {
@@ -234,29 +233,6 @@ export function CrmDealDetail({
               <span className="text-gray-500">{CHANNEL_LABELS[deal.source_channel]}</span>
             </div>
           </div>
-
-          {/* Imobiliário details */}
-          {crmType === 'imobiliario' && deal.interest_type && (
-            <div className="mt-3 p-3 bg-emerald-50 rounded-lg">
-              <div className="flex items-center gap-2 text-sm">
-                <Home className="w-4 h-4 text-emerald-600" />
-                <span className="font-medium text-emerald-700">
-                  Interesse: {deal.interest_type}
-                </span>
-                {deal.price_min !== null && deal.price_max !== null && (
-                  <span className="text-emerald-600 text-xs">
-                    R$ {deal.price_min?.toLocaleString('pt-BR')} - R$ {deal.price_max?.toLocaleString('pt-BR')}
-                  </span>
-                )}
-              </div>
-              {deal.preferred_areas && deal.preferred_areas.length > 0 && (
-                <div className="flex items-center gap-1 mt-1 text-xs text-emerald-600">
-                  <MapPin className="w-3 h-3" />
-                  {deal.preferred_areas.join(', ')}
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Tags */}
           {deal.tags.length > 0 && (

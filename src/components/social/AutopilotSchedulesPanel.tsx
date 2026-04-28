@@ -128,33 +128,6 @@ export function AutopilotSchedulesPanel() {
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
           />
 
-          {/* Formato + Duração */}
-          <div className="grid grid-cols-2 gap-3">
-            <select
-              title="Formato"
-              value={form.format}
-              onChange={e => setForm({ ...form, format: e.target.value as Format })}
-              className="px-3 py-2 border border-gray-200 rounded-lg text-sm"
-            >
-              <option value="feed">Post estático (feed)</option>
-              <option value="reel">Reel em vídeo</option>
-            </select>
-            {form.format === 'reel' ? (
-              <select
-                title="Duração do reel"
-                value={form.duration_sec}
-                onChange={e => setForm({ ...form, duration_sec: Number(e.target.value) as Duration })}
-                className="px-3 py-2 border border-gray-200 rounded-lg text-sm"
-              >
-                <option value={15}>15 segundos</option>
-                <option value={30}>30 segundos</option>
-                <option value={60}>60 segundos</option>
-              </select>
-            ) : (
-              <div className="px-3 py-2 text-xs text-gray-400 self-center">Reel gera vídeo com IA (plano Pro Plus+)</div>
-            )}
-          </div>
-
           <div className="grid grid-cols-2 gap-3">
             <select
               title="Frequência"
@@ -181,7 +154,7 @@ export function AutopilotSchedulesPanel() {
           <div className="flex gap-2 justify-end">
             <button
               type="button"
-              onClick={() => { setShowForm(false); setForm({ name: '', topic_hint: '', frequency: 'weekly', hour_of_day: 9, format: 'feed', duration_sec: 15 }) }}
+              onClick={() => { setShowForm(false); setForm({ name: '', topic_hint: '', frequency: 'weekly', hour_of_day: 9, format: 'feed' as Format, duration_sec: 15 as Duration }) }}
               className="px-3 py-2 text-gray-600 text-sm"
             >
               Cancelar

@@ -17,7 +17,6 @@ interface AutoPostModalProps {
   hashtags: string[]
   mediaUrls: string[]
   mediaType?: 'image' | 'video' | 'carousel' | 'reel'
-  reelCreatorContent?: Record<string, unknown>
 }
 
 type PostMode = 'now' | 'schedule'
@@ -29,8 +28,7 @@ export function AutoPostModal({
   caption,
   hashtags,
   mediaUrls,
-  mediaType = 'reel',
-  reelCreatorContent,
+  mediaType = 'image',
 }: AutoPostModalProps) {
   const [connections, setConnections] = useState<MetaConnection[]>([])
   const [selectedConnectionId, setSelectedConnectionId] = useState<string>('')
@@ -87,7 +85,6 @@ export function AutoPostModal({
             mediaUrls,
             mediaType,
             hashtags,
-            reelCreatorContent,
           }),
         })
         const data = await res.json() as { success?: boolean; permalink?: string; error?: string }
@@ -112,7 +109,6 @@ export function AutoPostModal({
             mediaType,
             hashtags,
             scheduledFor,
-            reelCreatorContent,
           }),
         })
         const data = await res.json() as { success?: boolean; error?: string }

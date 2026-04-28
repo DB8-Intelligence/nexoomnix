@@ -9,7 +9,6 @@ export type NicheType =
   | 'tecnico'
   | 'saude'
   | 'juridico'
-  | 'imoveis'
   | 'pet'
   | 'educacao'
   | 'nutricao'
@@ -427,68 +426,6 @@ export interface MediaLibrary {
   created_at: string
 }
 
-// ============================================================
-// IMOB MODULE (004)
-// ============================================================
-
-export type PropertyStatus =
-  | 'new'
-  | 'uploading'
-  | 'processing'
-  | 'caption_ready'
-  | 'video_processing'
-  | 'ready'
-  | 'published'
-  | 'error'
-
-export interface Property {
-  id: string
-  tenant_id: string
-  user_id: string | null
-  title: string | null
-  description: string | null
-  price: string | null
-  city: string | null
-  neighborhood: string | null
-  property_type: string | null
-  property_standard: string | null
-  investment_value: number | null
-  built_area_m2: number | null
-  highlights: string | null
-  cover_url: string | null
-  images: string[]
-  status: PropertyStatus
-  source: string
-  db8_agent_id: string | null
-  generated_caption: string | null
-  generated_video_url: string | null
-  generated_post_text: string | null
-  error_message: string | null
-  created_at: string
-  updated_at: string
-}
-
-export interface PropertyMedia {
-  id: string
-  property_id: string
-  tenant_id: string
-  url: string
-  type: 'image' | 'video'
-  order_index: number
-  created_at: string
-}
-
-export interface BrandTemplate {
-  id: string
-  tenant_id: string
-  name: string
-  config: Record<string, unknown>
-  preview_url: string | null
-  is_active: boolean
-  created_at: string
-  updated_at: string
-}
-
 export type ContentProjectStatus =
   | 'pending'
   | 'analyzing'
@@ -673,7 +610,7 @@ export interface CourseEnrollment {
 // CRM PIPELINE (013)
 // ============================================================
 
-export type CrmType = 'vendas' | 'imobiliario' | 'atendimento'
+export type CrmType = 'vendas' | 'atendimento'
 
 export type DealPriority = 'baixa' | 'media' | 'alta' | 'urgente'
 
@@ -757,12 +694,6 @@ export interface CrmDeal {
   lost_at: string | null
   lost_reason: string | null
   stage_entered_at: string
-  // Imobiliário
-  property_id: string | null
-  interest_type: string | null
-  price_min: number | null
-  price_max: number | null
-  preferred_areas: string[]
   // Atendimento
   next_appointment_id: string | null
   tags: string[]
@@ -775,7 +706,6 @@ export interface CrmDeal {
   stage?: CrmStage
   assigned?: Profile
   channels?: CrmDealChannel[]
-  property?: Property
   next_appointment?: Appointment
 }
 
@@ -840,7 +770,6 @@ export interface CrmMessageTemplate {
 
 /** CRM suggested type by niche */
 export const CRM_TYPE_BY_NICHE: Record<string, CrmType> = {
-  imoveis: 'imobiliario',
   beleza: 'atendimento',
   saude: 'atendimento',
   nutricao: 'atendimento',

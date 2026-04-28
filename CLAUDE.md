@@ -532,8 +532,11 @@ Código, rotas, components e tabelas relacionadas serão limpos em Sprint Cleanu
 ✅ FAL_KEY e ELEVENLABS_API_KEY no .env.example
 ```
 
-> ⚠️ Sub-feature **talking objects** + módulo **reel-creator** foram removidos do escopo.
-> Código, rotas, components e tabelas relacionadas serão limpos em Sprint Cleanup 2/3.
+> ⚠️ Sub-feature **talking objects** + módulo **Reel Creator AI / ViralObj** (pipeline
+> automático de geração de reels) foram removidos do escopo. Código, rotas, components
+> e libs relacionadas foram limpos em Sprint Cleanup 3 Fases A/B/C.
+> **Importante**: "reel" como **formato de publicação** (Instagram Reels via Meta Graph
+> API) continua válido — o que saiu foi a geração automática com IA, não o formato.
 
 ### FASE 8 — MONETIZACAO ✅ 100%
 
