@@ -90,8 +90,6 @@ export interface Tenant {
   stripe_price_id: string | null
   billing_cycle_anchor: string | null
   cancel_at_period_end: boolean
-  addon_talking_objects: boolean
-  addon_talking_objects_stripe_sub: string | null
   created_at: string
   updated_at: string
 }

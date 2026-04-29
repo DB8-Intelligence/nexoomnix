@@ -307,15 +307,23 @@ Content Personas (008): tenant_settings.content_persona_id
 Meta Autopost (009):    social_media_connections · scheduled_posts
 Branding (011):         tenant_settings.branding_*
 Agent Skills (012):     agent_skills · skill_generation_log
-
-> ⚠️ **Migrations fora do escopo do produto** (limpeza em Sprint Cleanup 3):
-> - 004 imob_module (`properties`, `property_media`, `brand_templates`)
-> - 010 talking_objects_addon (`tenants.addon_talking_objects` + nichos)
 CRM Pipeline (013):     crm_pipelines · crm_stages · crm_deals
                         crm_deal_channels · crm_activities
                         crm_messages · crm_message_templates
 AI Cost Control (023):  ai_usage  (rate limit + audit trail por tenant/tipo)
+Phase D Cleanup (024):  drop tabelas/colunas/enums/rows legacy de Reel
+                        Creator AI, Talking Objects e Imóveis (aplicada
+                        em 2026-04-29 via Supabase MCP). Schema agora
+                        reflete o produto vigente — sem properties/
+                        property_media/brand_templates, sem add-on
+                        talking_objects, sem 'imobiliario' em crm_type
+                        nem 'reel' em schedule_format.
 ```
+
+> ℹ️ **Migrations históricas que ficaram fora de escopo** (já neutralizadas
+> pela mig 024): `004_imob_module`, `005_content_ai` (colunas talking_object_*),
+> `010_talking_objects_addon`, `021_schedule_reel_format` (enum value 'reel').
+> Não editar migrations aplicadas — a remoção foi feita em 024.
 
 > Migration 023 aplicada em prod via MCP Supabase em 2026-04-24. Validar se ainda está consistente antes do próximo release.
 
@@ -336,9 +344,6 @@ CREATE TABLE IF NOT EXISTS content_projects (
 ALTER TABLE content_projects ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "tenant_isolation" ON content_projects USING (tenant_id = get_tenant_id());
 ```
-
-> ⚠️ Em prod, `content_projects` ainda tem colunas `talking_object_options`/`talking_object_selected`
-> da migration 005 original — limpeza prevista em Sprint Cleanup 3.
 
 RLS ATIVO EM TODAS AS TABELAS. Sempre usar get_tenant_id() nas politicas.
 

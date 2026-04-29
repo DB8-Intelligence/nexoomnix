@@ -89,17 +89,6 @@ export function useAuth() {
     [state.tenant]
   )
 
-  /**
-   * Verifica acesso ao add-on Objetos Falantes.
-   * Liberado se: addon comprado separadamente OU plano pro_plus ou superior.
-   */
-  const hasTalkingObjects = useCallback((): boolean => {
-    if (!state.tenant) return false
-    if (state.tenant.addon_talking_objects) return true
-    const order: PlanType[] = ['trial', 'starter', 'pro', 'pro_plus', 'pro_max', 'enterprise']
-    return order.indexOf(state.tenant.plan) >= order.indexOf('pro_plus')
-  }, [state.tenant])
-
   /** Verifica se um módulo está ativo para o tenant */
   const hasModule = useCallback(
     async (moduleId: string): Promise<boolean> => {
@@ -156,7 +145,6 @@ export function useAuth() {
     ...state,
     signOut,
     isPlanAtLeast,
-    hasTalkingObjects,
     hasModule,
     setupTenant,
   }
