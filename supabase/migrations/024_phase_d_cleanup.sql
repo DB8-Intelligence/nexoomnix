@@ -77,8 +77,14 @@ ALTER TABLE scheduled_posts
 
 -- ── 7. Recriar ENUM crm_type sem 'imobiliario' ─────────────────
 -- Postgres não suporta DROP VALUE em enum. Padrão rename → recreate → swap.
--- Default 'vendas'::crm_type é dropado e re-aplicado pra evitar dependência.
-ALTER TABLE crm_pipelines ALTER COLUMN crm_type DROP DEFAULT;
+-- Defaults dropados nas DUAS colunas que usam o enum (crm_pipelines.crm_type
+-- e tenant_settings.crm_type) e re-aplicados depois.
+-- Função create_default_pipeline(uuid, crm_type) precisa ser dropada antes
+-- (assinatura tem o enum no parâmetro) e recriada sem branch 'imobiliario'.
+DROP FUNCTION IF EXISTS create_default_pipeline(uuid, crm_type);
+
+ALTER TABLE crm_pipelines    ALTER COLUMN crm_type DROP DEFAULT;
+ALTER TABLE tenant_settings  ALTER COLUMN crm_type DROP DEFAULT;
 
 ALTER TYPE crm_type RENAME TO crm_type_old;
 
@@ -88,9 +94,73 @@ ALTER TABLE crm_pipelines
   ALTER COLUMN crm_type TYPE crm_type
   USING crm_type::text::crm_type;
 
-ALTER TABLE crm_pipelines ALTER COLUMN crm_type SET DEFAULT 'vendas'::crm_type;
+ALTER TABLE tenant_settings
+  ALTER COLUMN crm_type TYPE crm_type
+  USING crm_type::text::crm_type;
+
+ALTER TABLE crm_pipelines    ALTER COLUMN crm_type SET DEFAULT 'vendas'::crm_type;
+ALTER TABLE tenant_settings  ALTER COLUMN crm_type SET DEFAULT 'vendas'::crm_type;
 
 DROP TYPE crm_type_old;
+
+-- Recria create_default_pipeline sem branch 'imobiliario' (mig 013 original).
+CREATE OR REPLACE FUNCTION public.create_default_pipeline(p_tenant_id uuid, p_crm_type crm_type)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $function$
+DECLARE
+  v_pipeline_id UUID;
+BEGIN
+  INSERT INTO crm_pipelines (tenant_id, name, crm_type, is_default)
+  VALUES (p_tenant_id,
+    CASE p_crm_type
+      WHEN 'vendas'      THEN 'Pipeline de Vendas'
+      WHEN 'atendimento' THEN 'Pipeline de Atendimento'
+    END, p_crm_type, true
+  ) RETURNING id INTO v_pipeline_id;
+
+  IF p_crm_type = 'vendas' THEN
+    INSERT INTO crm_stages (pipeline_id, tenant_id, name, color, position, auto_days_alert) VALUES
+      (v_pipeline_id, p_tenant_id, 'Novo Lead',        '#6b7280', 0, 2),
+      (v_pipeline_id, p_tenant_id, 'Primeiro Contato', '#3b82f6', 1, 3),
+      (v_pipeline_id, p_tenant_id, 'Qualificado',      '#eab308', 2, 5),
+      (v_pipeline_id, p_tenant_id, 'Proposta Enviada', '#f97316', 3, 7),
+      (v_pipeline_id, p_tenant_id, 'Negociação',       '#8b5cf6', 4, 10),
+      (v_pipeline_id, p_tenant_id, 'Fechado Ganho',    '#22c55e', 5, NULL),
+      (v_pipeline_id, p_tenant_id, 'Perdido',          '#ef4444', 6, NULL);
+    UPDATE crm_stages SET is_won  = true WHERE pipeline_id = v_pipeline_id AND name = 'Fechado Ganho';
+    UPDATE crm_stages SET is_lost = true WHERE pipeline_id = v_pipeline_id AND name = 'Perdido';
+  ELSIF p_crm_type = 'atendimento' THEN
+    INSERT INTO crm_stages (pipeline_id, tenant_id, name, color, position, auto_days_alert) VALUES
+      (v_pipeline_id, p_tenant_id, 'Novo Contato',         '#6b7280', 0, 1),
+      (v_pipeline_id, p_tenant_id, 'Agendamento Pendente', '#3b82f6', 1, 2),
+      (v_pipeline_id, p_tenant_id, 'Agendado',             '#eab308', 2, NULL),
+      (v_pipeline_id, p_tenant_id, 'Atendido',             '#22c55e', 3, NULL),
+      (v_pipeline_id, p_tenant_id, 'Retorno Pendente',     '#f97316', 4, 7),
+      (v_pipeline_id, p_tenant_id, 'Fidelizado',           '#059669', 5, NULL),
+      (v_pipeline_id, p_tenant_id, 'Inativo',              '#ef4444', 6, NULL);
+    UPDATE crm_stages SET is_won  = true WHERE pipeline_id = v_pipeline_id AND name = 'Fidelizado';
+    UPDATE crm_stages SET is_lost = true WHERE pipeline_id = v_pipeline_id AND name = 'Inativo';
+  END IF;
+
+  INSERT INTO crm_message_templates (tenant_id, name, channel, category, content, variables) VALUES
+    (p_tenant_id, 'Confirmação de Agendamento', 'whatsapp', 'agendamento',
+     'Olá {{nome}}! Seu agendamento está confirmado para {{data}} às {{hora}}. Endereço: {{endereco}}. Qualquer dúvida, estamos à disposição!',
+     ARRAY['nome','data','hora','endereco']),
+    (p_tenant_id, 'Lembrete de Agendamento', 'whatsapp', 'agendamento',
+     'Olá {{nome}}! Lembrando que amanhã, {{data}}, às {{hora}} você tem um agendamento conosco. Até lá!',
+     ARRAY['nome','data','hora']),
+    (p_tenant_id, 'Boas-vindas', 'whatsapp', 'boas_vindas',
+     'Olá {{nome}}! Bem-vindo(a) à {{empresa}}! Ficamos felizes em ter você como cliente. Como podemos ajudá-lo(a)?',
+     ARRAY['nome','empresa']),
+    (p_tenant_id, 'Follow-up', 'whatsapp', 'followup',
+     'Olá {{nome}}! Tudo bem? Faz um tempo que não nos vemos. Que tal agendar um horário? Temos novidades para você!',
+     ARRAY['nome']);
+
+  RETURN v_pipeline_id;
+END;
+$function$;
 
 -- ── 8. Recriar ENUM schedule_format sem 'reel' ─────────────────
 -- Mesmo padrão. Default era 'feed'::schedule_format.
