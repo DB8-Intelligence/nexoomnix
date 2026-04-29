@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 import { AI_CONFIG, buildContadorSystemPrompt, type ContadorMessage } from '@/lib/ai'
+import { requireTenantWithRow } from '@/modules/platform/tenants/tenant-context'
+import {
+  FeatureNotAvailableError,
+  RateLimitExceededError,
+  guardAICall,
+  mockTextResponse,
+} from '@/modules/platform/ai-cost-control'
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
@@ -26,44 +33,50 @@ function checkRateLimit(tenantId: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-  }
-
-  // Buscar tenant
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, tenants(name, niche, plan)')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile) {
-    return NextResponse.json({ error: 'Perfil não encontrado' }, { status: 404 })
-  }
-
-  const tenant = Array.isArray(profile.tenants) ? profile.tenants[0] : profile.tenants
-  if (!tenant) {
-    return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 404 })
-  }
+  // Preserva a mensagem "Perfil não encontrado" do 404 original (pré-migração,
+  // quando `if (!profile)` era o caminho mais provável de falha). Edge case de
+  // "profile com tenant_id órfão" é inalcançável em prod (FK + DashboardLayout).
+  const ctx = await requireTenantWithRow({
+    tenantMissingMessage: 'Perfil não encontrado',
+  })
+  if (ctx instanceof NextResponse) return ctx
 
   // Verificar plano (IA Contador = enterprise, mas deixar pro_plus ter acesso básico)
   const allowedPlans = ['pro_plus', 'enterprise']
-  if (!allowedPlans.includes(tenant.plan)) {
+  if (!allowedPlans.includes(ctx.tenant.plan)) {
     return NextResponse.json(
       { error: 'Recurso disponível nos planos Pro Plus e Enterprise' },
       { status: 403 }
     )
   }
 
-  // Rate limit
-  if (!checkRateLimit(profile.tenant_id)) {
+  // Rate limit (per-minute, in-memory — complementar ao rate limit diário do guard)
+  if (!checkRateLimit(ctx.tenantId)) {
     return NextResponse.json(
       { error: 'Limite de 10 perguntas por minuto atingido' },
       { status: 429 }
     )
+  }
+
+  // Cost control: feature gate + rate limit diário + simulate
+  let simulate: boolean
+  try {
+    ;({ simulate } = await guardAICall({
+      tenantId: ctx.tenantId,
+      plan: ctx.tenant.plan,
+      type: 'text',
+    }))
+  } catch (err) {
+    if (err instanceof FeatureNotAvailableError) {
+      return NextResponse.json({ error: 'IA Contador não disponível no seu plano' }, { status: 403 })
+    }
+    if (err instanceof RateLimitExceededError) {
+      return NextResponse.json(
+        { error: `Limite diário de IA atingido (${err.limit}/dia). Tente novamente mais tarde.` },
+        { status: 429 },
+      )
+    }
+    throw err
   }
 
   const body = await request.json() as { messages: ContadorMessage[] }
@@ -73,32 +86,33 @@ export async function POST(request: NextRequest) {
   }
 
   // Buscar contexto financeiro do tenant
+  const supabase = await createClient()
   const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
 
   const [revenueRes, expenseRes, overdueRes, balanceRes] = await Promise.all([
     supabase
       .from('transactions')
       .select('amount')
-      .eq('tenant_id', profile.tenant_id)
+      .eq('tenant_id', ctx.tenantId)
       .eq('type', 'receita')
       .eq('status', 'pago')
       .gte('paid_at', startOfMonth),
     supabase
       .from('transactions')
       .select('amount')
-      .eq('tenant_id', profile.tenant_id)
+      .eq('tenant_id', ctx.tenantId)
       .eq('type', 'despesa')
       .eq('status', 'pago')
       .gte('paid_at', startOfMonth),
     supabase
       .from('transactions')
       .select('amount')
-      .eq('tenant_id', profile.tenant_id)
+      .eq('tenant_id', ctx.tenantId)
       .eq('status', 'vencido'),
     supabase
       .from('contas_bancarias')
       .select('saldo_atual')
-      .eq('tenant_id', profile.tenant_id)
+      .eq('tenant_id', ctx.tenantId)
       .eq('is_active', true),
   ])
 
@@ -108,15 +122,19 @@ export async function POST(request: NextRequest) {
   const balance = balanceRes.data?.reduce((s, c) => s + c.saldo_atual, 0) ?? 0
 
   const systemPrompt = buildContadorSystemPrompt({
-    tenantName: tenant.name,
-    niche: tenant.niche,
-    plan: tenant.plan,
+    tenantName: ctx.tenant.name,
+    niche: ctx.tenant.niche,
+    plan: ctx.tenant.plan,
     revenueThisMonth: revenue,
     expensesThisMonth: expenses,
     profitThisMonth: revenue - expenses,
     overdueReceivables: overdue,
     cashBalance: balance,
   })
+
+  if (simulate) {
+    return NextResponse.json({ message: mockTextResponse('Resposta IA Contador') })
+  }
 
   try {
     const response = await anthropic.messages.create({

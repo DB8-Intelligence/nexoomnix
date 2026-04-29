@@ -47,7 +47,6 @@ db8-api/
 │   │   ├── gerar-conteudo/route.ts   ← MIGRAR de nexopro
 │   │   ├── contador/route.ts          ← MIGRAR de nexopro
 │   │   ├── peticao/route.ts           ← novo (nicho juridico)
-│   │   ├── laudo/route.ts             ← novo (nicho imoveis)
 │   │   └── material-didatico/route.ts ← novo (nicho educacao)
 │   ├── auth/
 │   │   ├── setup-tenant/route.ts      ← extrair de useAuth.ts

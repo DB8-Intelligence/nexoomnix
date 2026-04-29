@@ -1,0 +1,12 @@
+rules_version = '2';
+
+// NexoOmnix V2 Foundation — Firestore deny-all baseline.
+// Nenhum read/write é permitido até regras serem evoluídas com modelo de dados real.
+// NÃO afeta o app V1 atual (Supabase). Ver docs/firebase/base.md.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

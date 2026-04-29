@@ -57,7 +57,6 @@ const CATEGORY_TABS: { id: PersonaId; label: string; emoji: string }[] = [
   { id: 'beleza',     label: 'Beleza',     emoji: '✂️' },
   { id: 'tecnico',    label: 'Técnico',    emoji: '🔧' },
   { id: 'juridico',   label: 'Jurídico',   emoji: '⚖️' },
-  { id: 'imoveis',    label: 'Imóveis',    emoji: '🔑' },
   { id: 'educacao',   label: 'Educação',   emoji: '📚' },
   { id: 'pet',        label: 'Pet',        emoji: '🐾' },
   { id: 'humor',      label: 'Humor',      emoji: '😂' },

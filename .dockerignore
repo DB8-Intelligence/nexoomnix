@@ -1,0 +1,64 @@
+# Versionamento
+.git
+.gitignore
+.github
+
+# Dependências (instaladas no stage deps via npm ci)
+node_modules
+.pnp
+.pnp.js
+.yarn
+
+# Build artifacts (gerados no stage builder)
+.next
+out
+build
+coverage
+*.tsbuildinfo
+next-env.d.ts
+
+# Vercel-specific (não usado em Cloud Run)
+.vercel
+
+# Env files — NUNCA enviar pro container.
+# Cloud Run recebe env vars via --set-env-vars ou Secret Manager.
+.env
+.env.*
+.env.local
+
+# Documentação não vai pro container
+docs
+*.md
+!README.md
+
+# Ferramentas locais que não rodam em prod
+scripts/setup-secrets.json
+scripts/setup-result.json
+
+# Harness do Claude Code
+.claude
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing artifacts
+test-results
+playwright-report
+.eslintcache
+
+# Supabase CLI artifacts
+supabase/.branches
+supabase/.temp

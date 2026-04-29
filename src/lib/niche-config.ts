@@ -3,7 +3,6 @@ export type NicheSlug =
   | 'tecnico'
   | 'saude'
   | 'juridico'
-  | 'imoveis'
   | 'pet'
   | 'educacao'
   | 'nutricao'
@@ -209,43 +208,6 @@ export const NICHE_CONFIGS: Record<NicheSlug, NicheConfig> = {
       { id: 'financeiro', label: 'Financeiro', icon: 'DollarSign', available: true, plans: ['starter', 'pro', 'pro_plus', 'enterprise'] },
       { id: 'contabilidade', label: 'Contabilidade', icon: 'BarChart3', available: true, plans: ['pro_plus', 'enterprise'] },
       { id: 'ia_contador', label: 'IA Contador', icon: 'Bot', available: true, plans: ['enterprise'] },
-    ],
-  },
-
-  imoveis: {
-    slug: 'imoveis',
-    brandName: 'ImóveisPro',
-    instagram: '@imoveispro.app',
-    facebook: 'ImóveisPro',
-    tagline: 'CRM e gestão para imobiliárias e corretores',
-    description: 'Gestão de imóveis, clientes e comissões para corretores',
-    primaryColor: '#059669',
-    colorClass: 'emerald',
-    icon: 'Home',
-    terms: {
-      client: 'cliente',
-      clients: 'clientes',
-      appointment: 'visita',
-      appointments: 'visitas',
-      service: 'imóvel',
-      services: 'imóveis',
-      professional: 'corretor',
-    },
-    kpiLabels: {
-      primary: 'Visitas hoje',
-      secondary: 'Imóveis ativos',
-      tertiary: 'Comissões do mês',
-      quaternary: 'Taxa de conversão',
-    },
-    modules: [
-      { id: 'imoveis', label: 'Imóveis', icon: 'Home', available: true, plans: ['starter', 'pro', 'pro_plus', 'enterprise'] },
-      { id: 'clientes', label: 'CRM Clientes', icon: 'Users', available: true, plans: ['starter', 'pro', 'pro_plus', 'enterprise'] },
-      { id: 'visitas', label: 'Visitas', icon: 'Calendar', available: true, plans: ['starter', 'pro', 'pro_plus', 'enterprise'] },
-      { id: 'contratos', label: 'Contratos', icon: 'FileText', available: true, plans: ['pro', 'pro_plus', 'enterprise'] },
-      { id: 'financeiro', label: 'Financeiro', icon: 'DollarSign', available: true, plans: ['starter', 'pro', 'pro_plus', 'enterprise'] },
-      { id: 'contabilidade', label: 'Contabilidade', icon: 'BarChart3', available: true, plans: ['pro_plus', 'enterprise'] },
-      { id: 'ia_contador', label: 'IA Contador', icon: 'Bot', available: true, plans: ['enterprise'] },
-      { id: 'social', label: 'Redes Sociais IA', icon: 'Share2', available: true, plans: ['pro', 'pro_plus', 'enterprise'] },
     ],
   },
 

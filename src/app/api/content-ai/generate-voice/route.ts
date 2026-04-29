@@ -1,12 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireTenantWithRow } from '@/modules/platform/tenants/tenant-context'
+import {
+  FeatureNotAvailableError,
+  RateLimitExceededError,
+  guardAICall,
+  mockVoiceUrl,
+} from '@/modules/platform/ai-cost-control'
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  const ctx = await requireTenantWithRow()
+  if (ctx instanceof NextResponse) return ctx
 
-  if (!process.env.ELEVENLABS_API_KEY) {
+  let simulate: boolean
+  try {
+    ;({ simulate } = await guardAICall({
+      tenantId: ctx.tenantId,
+      plan: ctx.tenant.plan,
+      type: 'tts',
+    }))
+  } catch (err) {
+    if (err instanceof FeatureNotAvailableError) {
+      return NextResponse.json({ error: 'Geração de voz não disponível no seu plano' }, { status: 403 })
+    }
+    if (err instanceof RateLimitExceededError) {
+      return NextResponse.json(
+        { error: `Limite diário de TTS atingido (${err.limit}/dia). Tente novamente mais tarde.` },
+        { status: 429 },
+      )
+    }
+    throw err
+  }
+
+  if (!simulate && !process.env.ELEVENLABS_API_KEY) {
     return NextResponse.json({ error: 'ELEVENLABS_API_KEY não configurada' }, { status: 503 })
   }
 
@@ -20,6 +46,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'project_id e text são obrigatórios' }, { status: 400 })
   }
 
+  const supabase = await createClient()
   const { data: project, error: projError } = await supabase
     .from('content_projects')
     .select('id')
@@ -28,6 +55,15 @@ export async function POST(req: NextRequest) {
 
   if (projError || !project) {
     return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
+  }
+
+  if (simulate) {
+    const voiceUrl = mockVoiceUrl()
+    await supabase
+      .from('content_projects')
+      .update({ status: 'configuring', generated_voice_url: voiceUrl })
+      .eq('id', project_id)
+    return NextResponse.json({ voice_url: voiceUrl })
   }
 
   await supabase
@@ -39,7 +75,7 @@ export async function POST(req: NextRequest) {
     const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice_id}`, {
       method: 'POST',
       headers: {
-        'xi-api-key': process.env.ELEVENLABS_API_KEY,
+        'xi-api-key': process.env.ELEVENLABS_API_KEY!,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -54,7 +90,6 @@ export async function POST(req: NextRequest) {
       throw new Error(`ElevenLabs error ${res.status}: ${err}`)
     }
 
-    // Upload audio to Supabase Storage
     const audioBuffer = await res.arrayBuffer()
     const fileName = `voice/${project_id}-${Date.now()}.mp3`
     const { data: uploaded, error: uploadError } = await supabase.storage

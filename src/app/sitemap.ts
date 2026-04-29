@@ -8,7 +8,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/salaopro',
     '/clinicapro',
     '/ordemdeservico',
-    '/imobpro',
     '/juridicpro',
     '/petpro',
     '/educapro',

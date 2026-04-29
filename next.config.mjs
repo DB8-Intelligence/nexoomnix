@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Cloud Run / qualquer container deployment: gera bundle minimal Node em
+  // .next/standalone com apenas as deps efetivamente usadas. Reduz imagem
+  // Docker em ~80% e elimina necessidade de copiar node_modules inteiro.
+  // Sem efeito em deploy Vercel (Vercel ignora a flag).
+  output: 'standalone',
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '*.supabase.co' },

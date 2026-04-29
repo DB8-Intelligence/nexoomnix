@@ -1,0 +1,12 @@
+rules_version = '2';
+
+// NexoOmnix V2 Foundation — Storage deny-all baseline.
+// Nenhum read/write é permitido até regras serem evoluídas com casos de uso reais.
+// NÃO afeta o app V1 atual (Supabase Storage). Ver docs/firebase/base.md.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

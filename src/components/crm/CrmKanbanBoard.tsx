@@ -202,7 +202,6 @@ export function CrmKanbanBoard({
         isOpen={showForm}
         onClose={() => setShowForm(false)}
         onSubmit={handleFormSubmit}
-        crmType={crmType}
         clients={clients}
       />
 
@@ -211,7 +210,6 @@ export function CrmKanbanBoard({
         <CrmDealDetail
           deal={selectedDeal}
           stages={stages}
-          crmType={crmType}
           onClose={() => setSelectedDeal(null)}
           onUpdate={async (data) => { await onUpdateDeal(selectedDeal.id, data); setSelectedDeal(null) }}
           onMove={async (stageId) => { await onMoveDeal(selectedDeal.id, stageId) }}

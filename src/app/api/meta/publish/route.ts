@@ -7,7 +7,6 @@ interface PublishRequest {
   mediaUrls: string[]        // URLs públicas das imagens/vídeo
   mediaType: 'image' | 'video' | 'carousel' | 'reel'
   hashtags?: string[]
-  reelCreatorContent?: Record<string, unknown>
 }
 
 // POST — publicar imediatamente via Meta Graph API
@@ -35,7 +34,7 @@ export async function POST(req: Request) {
   }
 
   const body: PublishRequest = await req.json()
-  const { connectionId, caption, mediaUrls, mediaType, hashtags = [], reelCreatorContent } = body
+  const { connectionId, caption, mediaUrls, mediaType, hashtags = [] } = body
 
   if (!connectionId || !caption || !mediaUrls?.length) {
     return NextResponse.json({ error: 'connectionId, caption e mediaUrls são obrigatórios' }, { status: 400 })
@@ -69,7 +68,6 @@ export async function POST(req: Request) {
       media_type: mediaType,
       hashtags,
       status: 'publishing',
-      reel_creator_content: reelCreatorContent ?? null,
     })
     .select()
     .single()

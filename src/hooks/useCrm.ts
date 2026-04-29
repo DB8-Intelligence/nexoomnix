@@ -25,12 +25,6 @@ export interface DealFormData {
   client_id: string | null
   tags: string[]
   notes: string | null
-  // Imobiliário
-  property_id?: string | null
-  interest_type?: string | null
-  price_min?: number | null
-  price_max?: number | null
-  preferred_areas?: string[]
 }
 
 export interface StageFormData {

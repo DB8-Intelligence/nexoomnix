@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireTenantWithRow } from '@/modules/platform/tenants/tenant-context'
+import {
+  FeatureNotAvailableError,
+  RateLimitExceededError,
+  guardAICall,
+  mockImageUrl,
+} from '@/modules/platform/ai-cost-control'
 import type { ContentScene } from '@/types/database'
 
 interface GeneratedImage {
@@ -9,17 +16,37 @@ interface GeneratedImage {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  const ctx = await requireTenantWithRow()
+  if (ctx instanceof NextResponse) return ctx
 
-  if (!process.env.FAL_KEY) {
+  let simulate: boolean
+  try {
+    ;({ simulate } = await guardAICall({
+      tenantId: ctx.tenantId,
+      plan: ctx.tenant.plan,
+      type: 'image',
+    }))
+  } catch (err) {
+    if (err instanceof FeatureNotAvailableError) {
+      return NextResponse.json({ error: 'Geração de imagens não disponível no seu plano' }, { status: 403 })
+    }
+    if (err instanceof RateLimitExceededError) {
+      return NextResponse.json(
+        { error: `Limite diário de imagens atingido (${err.limit}/dia). Tente novamente mais tarde.` },
+        { status: 429 },
+      )
+    }
+    throw err
+  }
+
+  if (!simulate && !process.env.FAL_KEY) {
     return NextResponse.json({ error: 'FAL_KEY não configurada' }, { status: 503 })
   }
 
   const { project_id } = await req.json() as { project_id: string }
   if (!project_id) return NextResponse.json({ error: 'project_id obrigatório' }, { status: 400 })
 
+  const supabase = await createClient()
   const { data: project, error: projError } = await supabase
     .from('content_projects')
     .select('id, generated_scenes')
@@ -45,6 +72,12 @@ export async function POST(req: NextRequest) {
 
     for (const scene of scenes) {
       const prompt = scene.image_prompt ?? scene.description
+
+      if (simulate) {
+        generatedImages.push({ scene_id: scene.id, url: mockImageUrl(576, 768), prompt })
+        continue
+      }
+
       const res = await fetch('https://fal.run/fal-ai/flux/schnell', {
         method: 'POST',
         headers: {

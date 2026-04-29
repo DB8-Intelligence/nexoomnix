@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  Zap, Scissors, Wrench, Stethoscope, Scale, Home, PawPrint,
+  Zap, Scissors, Wrench, Stethoscope, Scale, PawPrint,
   GraduationCap, Apple, HardHat, Camera, UtensilsCrossed, Dumbbell, Calculator,
   CheckCircle2, ChevronRight, Loader2, Eye, EyeOff
 } from 'lucide-react'
@@ -15,6 +15,7 @@ import type { PlanType } from '@/types/database'
 import { PersonaSelector } from '@/components/content-ai/PersonaSelector'
 import { getPersonaForNiche } from '@/lib/content-ai/content-personas'
 import type { PersonaId } from '@/lib/content-ai/content-personas'
+import { SocialLoginButtons } from '@/components/auth/SocialLoginButtons'
 
 type Step = 'account' | 'niche' | 'business' | 'persona' | 'plan' | 'success'
 
@@ -23,7 +24,6 @@ const NICHE_ICONS: Record<NicheSlug, React.ReactNode> = {
   tecnico:     <Wrench className="w-6 h-6" />,
   saude:       <Stethoscope className="w-6 h-6" />,
   juridico:    <Scale className="w-6 h-6" />,
-  imoveis:     <Home className="w-6 h-6" />,
   pet:         <PawPrint className="w-6 h-6" />,
   educacao:    <GraduationCap className="w-6 h-6" />,
   nutricao:    <Apple className="w-6 h-6" />,
@@ -63,6 +63,37 @@ export default function CadastroPage() {
   })
   const [personaId, setPersonaId] = useState<PersonaId | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+
+  // Detecta sessão ativa ao carregar:
+  //   - Com tenant   -> já cadastrado, redireciona pro dashboard
+  //   - Sem tenant   -> veio via OAuth, pula o passo "account" e vai direto pro nicho
+  //                     (pré-preenchendo nome/email a partir do provider)
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (cancelled || !session) return
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', session.user.id)
+        .maybeSingle()
+      if (cancelled) return
+      if (profile?.tenant_id) {
+        router.replace('/dashboard')
+        return
+      }
+      // Autenticado (OAuth) sem tenant: pré-preenche dados e avança pra escolha de nicho
+      const meta = session.user.user_metadata ?? {}
+      setFormData(prev => ({
+        ...prev,
+        email:    session.user.email ?? prev.email,
+        fullName: meta.full_name || meta.name || prev.fullName,
+      }))
+      setStep('niche')
+    })()
+    return () => { cancelled = true }
+  }, [supabase, router])
 
   function update(field: string, value: string) {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -116,31 +147,50 @@ export default function CadastroPage() {
     setError(null)
 
     try {
-      // 1. Criar usuário no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
-        },
-      })
+      // 1. Obtém/cria o usuário no Supabase Auth.
+      // Se já existe sessão (OAuth), reaproveita — senão faz signUp por email/senha.
+      const { data: { session: existingSession } } = await supabase.auth.getSession()
+      let userId: string
+      if (existingSession) {
+        userId = existingSession.user.id
+      } else {
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+          },
+        })
+        if (authError) throw new Error(authError.message)
+        if (!authData.user) throw new Error('Erro ao criar usuário')
+        userId = authData.user.id
+      }
 
-      if (authError) throw new Error(authError.message)
-      if (!authData.user) throw new Error('Erro ao criar usuário')
-
-      // 2. Chamar setup_tenant via RPC
-      const slug = slugify(formData.businessName)
-      const { error: rpcError } = await supabase.rpc('setup_tenant', {
-        p_user_id:   authData.user.id,
-        p_name:      formData.businessName,
-        p_slug:      slug,
-        p_niche:     formData.niche,
-        p_plan:      plan,
-        p_full_name: formData.fullName,
-        p_email:     formData.email,
-        p_phone:     formData.phone || null,
-        p_whatsapp:  formData.whatsapp || null,
-      })
+      // 2. Chamar setup_tenant via RPC com retry em caso de slug duplicado.
+      // 23505 = unique_violation no Postgres. Retenta até 5x com sufixo aleatório.
+      const baseSlug = slugify(formData.businessName)
+      let rpcError: { code?: string; message: string } | null = null
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const slug = attempt === 0
+          ? baseSlug
+          : `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`
+        const { error } = await supabase.rpc('setup_tenant', {
+          p_user_id:   userId,
+          p_name:      formData.businessName,
+          p_slug:      slug,
+          p_niche:     formData.niche,
+          p_plan:      plan,
+          p_full_name: formData.fullName,
+          p_email:     formData.email,
+          p_phone:     formData.phone || null,
+          p_whatsapp:  formData.whatsapp || null,
+        })
+        if (!error) { rpcError = null; break }
+        rpcError = error
+        const isUniqueViolation =
+          error.code === '23505' || error.message?.includes('tenants_slug_key')
+        if (!isUniqueViolation) break
+      }
 
       if (rpcError) throw new Error(rpcError.message)
 
@@ -149,7 +199,7 @@ export default function CadastroPage() {
         const { data: profile } = await supabase
           .from('profiles')
           .select('tenant_id')
-          .eq('id', authData.user.id)
+          .eq('id', userId)
           .single()
 
         if (profile?.tenant_id) {
@@ -278,6 +328,8 @@ export default function CadastroPage() {
                 <ChevronRight className="w-4 h-4" />
               </button>
             </form>
+
+            <SocialLoginButtons next="/cadastro" />
 
             <p className="text-center text-sm text-gray-500 mt-4">
               Já tem conta?{' '}

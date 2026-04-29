@@ -26,11 +26,6 @@ export const PLAN_PRICE_IDS: Record<string, string | undefined> = {
   enterprise: process.env.STRIPE_PRICE_ENTERPRISE,
 }
 
-/** Add-ons — produtos separados do plano principal */
-export const ADDON_PRICE_IDS: Record<string, string | undefined> = {
-  talking_objects: process.env.STRIPE_PRICE_ADDON_TALKING_OBJECTS,
-}
-
 export const PLAN_LABELS: Record<string, string> = {
   starter:    'Starter — R$ 99/mês',
   pro:        'Pro — R$ 199/mês',
@@ -39,16 +34,7 @@ export const PLAN_LABELS: Record<string, string> = {
   enterprise: 'Enterprise — R$ 699/mês',
 }
 
-export const ADDON_LABELS: Record<string, string> = {
-  talking_objects: 'Objetos Falantes IA — R$ 49/mês',
-}
-
 /** Maps a Stripe Price ID back to a plan slug */
 export function planFromPriceId(priceId: string): string {
   return Object.entries(PLAN_PRICE_IDS).find(([, v]) => v === priceId)?.[0] ?? 'starter'
-}
-
-/** Maps a Stripe Price ID back to an addon key */
-export function addonFromPriceId(priceId: string): string | null {
-  return Object.entries(ADDON_PRICE_IDS).find(([, v]) => v === priceId)?.[0] ?? null
 }

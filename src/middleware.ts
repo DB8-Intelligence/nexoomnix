@@ -1,7 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import type { CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { getDomainConfig, isReelCreatorDomain, NICHE_COOKIE, PRODUCT_MODE_COOKIE } from '@/lib/domain-config'
 
 // Routes accessible without authentication
 const PUBLIC_ROUTES = [
@@ -11,11 +10,14 @@ const PUBLIC_ROUTES = [
   '/esqueci-senha',
   '/api/auth',
   '/api/webhooks',
+  // Crons: Vercel Cron chama sem sessão, auth via Authorization: Bearer CRON_SECRET (validado na própria rota).
+  '/api/cron',
+  // Compositor OG: consumido pelo Instagram Graph API (sem sessão) pra baixar o PNG na hora de publicar.
+  '/api/og',
   // Niche landing pages (marketing)
   '/salaopro',
   '/clinicapro',
   '/ordemdeservico',
-  '/imobpro',
   '/juridicpro',
   '/petpro',
   '/educapro',
@@ -25,12 +27,23 @@ const PUBLIC_ROUTES = [
   '/gastronomia',
   '/fitness',
   '/financas',
-  '/reelcreator',
 ]
+
+// Rotas removidas do escopo do produto — redirect 301 pra raiz.
+// Mantidas como redirect (não 404) para preservar links externos durante janela de SEO.
+// Páginas internas serão deletadas em Sprint Cleanup futura.
+const REMOVED_PATH_PREFIXES = ['/imobpro', '/reelcreator']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const hostname = request.headers.get('host') ?? ''
+
+  // Rotas fora de escopo → 301 pra home (preserva backlinks)
+  if (REMOVED_PATH_PREFIXES.some(p => pathname === p || pathname.startsWith(p + '/'))) {
+    const homeUrl = request.nextUrl.clone()
+    homeUrl.pathname = '/'
+    homeUrl.search = ''
+    return NextResponse.redirect(homeUrl, 301)
+  }
 
   // Site público dos clientes — sempre acessível
   if (pathname.startsWith('/s/')) {
@@ -45,9 +58,6 @@ export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: { headers: request.headers },
   })
-
-  // Domain detection — set niche cookie for the session
-  const domainCfg = getDomainConfig(hostname)
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -72,31 +82,6 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Persist niche cookie for domain-specific deployments
-  if (domainCfg) {
-    response.cookies.set(NICHE_COOKIE, domainCfg.niche, {
-      path: '/',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-    })
-  }
-
-  // Persist product-mode cookie for ReelCreator standalone dashboard
-  if (isReelCreatorDomain(hostname)) {
-    response.cookies.set(PRODUCT_MODE_COOKIE, 'reelcreator', {
-      path: '/',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-    })
-  }
-
-  // Unauthenticated user on domain root → redirect to domain's landing page
-  if (!user && pathname === '/' && domainCfg) {
-    const landingUrl = request.nextUrl.clone()
-    landingUrl.pathname = domainCfg.landingPath
-    return NextResponse.redirect(landingUrl)
-  }
-
   // Unauthenticated user on protected route → login
   if (!user && !isPublic) {
     const loginUrl = request.nextUrl.clone()
@@ -105,8 +90,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // Authenticated user on login/cadastro → dashboard
-  if (user && (pathname === '/login' || pathname === '/cadastro')) {
+  // Authenticated user on login → dashboard.
+  // /cadastro é omitido: a página /cadastro detecta user logado sem tenant e
+  // permite completar o onboarding (OAuth signup ou signup parcial).
+  if (user && pathname === '/login') {
     const dashboardUrl = request.nextUrl.clone()
     dashboardUrl.pathname = '/dashboard'
     return NextResponse.redirect(dashboardUrl)
@@ -115,8 +102,12 @@ export async function middleware(request: NextRequest) {
   return response
 }
 
+// Rotas que NÃO devem passar pelo middleware (sem auth check, sem cookie parsing).
+// Inclui artefatos do Next, arquivos de SEO/PWA e extensões estáticas comuns.
+// `.webp` corrigido (era typo `.webpo`); `.ico/.txt/.xml/.json/.woff*/.ttf` adicionados
+// para cobrir robots.txt, sitemap.xml, manifest.json, fontes e ícones servidos diretamente.
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webpo)$).*)',
+    '/((?!_next/static|_next/image|_next/data|favicon.ico|robots.txt|sitemap.xml|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml|json|woff|woff2|ttf)$).*)',
   ],
 }

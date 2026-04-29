@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import {
   Zap, Calendar, Users, DollarSign, BarChart3, FileText,
   Share2, Globe, Bot, Bell, Settings, X, ChevronRight,
-  ClipboardList, Home, BookOpen, Package, Sparkles, CreditCard, PieChart, Film, FlaskConical, Kanban
+  ClipboardList, BookOpen, Package, Sparkles, CreditCard, PieChart, FlaskConical, Kanban, Bug
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getNicheConfig } from '@/lib/niche-config'
@@ -15,7 +15,7 @@ interface SidebarProps {
   tenant: Tenant
   open: boolean
   onClose: () => void
-  productMode?: string
+  isStaff?: boolean
 }
 
 interface NavItem {
@@ -32,9 +32,7 @@ function getNavItems(tenant: Tenant): NavItem[] {
   // Módulo de agenda/OS muda por nicho
   const agendaItem: NavItem = niche === 'tecnico'
     ? { href: '/agenda', label: 'Ordens de Serviço', icon: <ClipboardList className="w-4 h-4" />, requiredModule: 'agenda' }
-    : niche === 'imoveis'
-      ? { href: '/agenda', label: 'Visitas', icon: <Calendar className="w-4 h-4" />, requiredModule: 'agenda' }
-      : { href: '/agenda', label: 'Omnix Agenda', icon: <Calendar className="w-4 h-4" />, requiredModule: 'agenda' }
+    : { href: '/agenda', label: 'Omnix Agenda', icon: <Calendar className="w-4 h-4" />, requiredModule: 'agenda' }
 
   const clientsItem: NavItem = {
     href: '/clientes',
@@ -57,14 +55,11 @@ function getNavItems(tenant: Tenant): NavItem[] {
     agendaItem,
     clientsItem,
     crmItem,
-    ...(niche === 'juridico' || niche === 'imoveis' ? [
+    ...(niche === 'juridico' ? [
       { href: '/documentos', label: 'Documentos', icon: <FileText className="w-4 h-4" />, requiredModule: 'documentos' },
     ] : []),
     ...(niche === 'tecnico' || niche === 'pet' ? [
       { href: '/estoque', label: 'Estoque', icon: <Package className="w-4 h-4" />, requiredModule: 'estoque' },
-    ] : []),
-    ...(niche === 'imoveis' ? [
-      { href: '/imoveis', label: 'Imóveis', icon: <Home className="w-4 h-4" />, requiredModule: 'imoveis' },
     ] : []),
     ...(niche === 'educacao' ? [
       { href: '/cursos', label: 'Cursos / Turmas', icon: <BookOpen className="w-4 h-4" />, requiredModule: 'cursos' },
@@ -73,26 +68,16 @@ function getNavItems(tenant: Tenant): NavItem[] {
     { href: '/relatorios', label: 'Relatórios', icon: <PieChart className="w-4 h-4" />, requiredModule: 'contabilidade', badge: 'Pro+' },
     { href: '/contabilidade', label: 'Contabilidade', icon: <BarChart3 className="w-4 h-4" />, requiredModule: 'contabilidade', badge: 'Pro+' },
     { href: '/conteudo', label: 'Omnix Content', icon: <Sparkles className="w-4 h-4" />, requiredModule: 'content_ai', badge: 'Pro' },
-    { href: '/reel-creator', label: 'Omnix Reels', icon: <Film className="w-4 h-4" />, requiredModule: 'content_ai', badge: 'Pro' },
-    { href: '/reel-creator/analisar', label: 'Analisar por Link', icon: <Zap className="w-4 h-4" />, requiredModule: 'content_ai', badge: 'Pro' },
     { href: '/redes-sociais', label: 'Omnix Social', icon: <Share2 className="w-4 h-4" />, requiredModule: 'social', badge: 'Pro' },
     { href: '/site-publico', label: 'Omnix Sites', icon: <Globe className="w-4 h-4" />, requiredModule: 'site', badge: 'Pro' },
     { href: '/ia-contador', label: 'IA Contador', icon: <Bot className="w-4 h-4" />, requiredModule: 'ia_contador', badge: 'Enterprise' },
   ]
 }
 
-const REELCREATOR_NAV: NavItem[] = [
-  { href: '/reel-creator',         label: 'Omnix Reels',       icon: <Film className="w-4 h-4" />,     requiredModule: 'content_ai' },
-  { href: '/reel-creator/analisar',label: 'Analisar por Link', icon: <Zap className="w-4 h-4" />,      requiredModule: 'content_ai', badge: 'Pro' },
-  { href: '/conteudo',             label: 'Omnix Content',     icon: <Sparkles className="w-4 h-4" />, requiredModule: 'content_ai' },
-  { href: '/redes-sociais',        label: 'Omnix Social',      icon: <Share2 className="w-4 h-4" />,   requiredModule: 'social',     badge: 'Pro' },
-]
-
-export function Sidebar({ tenant, open, onClose, productMode = 'nexoomnix' }: SidebarProps) {
+export function Sidebar({ tenant, open, onClose, isStaff = false }: SidebarProps) {
   const pathname = usePathname()
   const niche = getNicheConfig(tenant.niche)
-  const isReelCreator = productMode === 'reelcreator'
-  const navItems = isReelCreator ? REELCREATOR_NAV : getNavItems(tenant)
+  const navItems = getNavItems(tenant)
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
@@ -107,15 +92,15 @@ export function Sidebar({ tenant, open, onClose, productMode = 'nexoomnix' }: Si
               data-color={niche.primaryColor}
               style={{ backgroundColor: niche.primaryColor }} // dynamic brand color — cannot be a Tailwind class
             >
-              {isReelCreator ? <Film className="w-4 h-4 text-white" /> : <Zap className="w-4 h-4 text-white" />}
+              <Zap className="w-4 h-4 text-white" />
             </div>
           )}
           <div className="min-w-0">
             <div className="font-bold text-gray-900 text-sm truncate">
-              {isReelCreator ? 'ReelCreator AI' : tenant.name}
+              {tenant.name}
             </div>
             <div className="text-xs text-gray-400 truncate">
-              {isReelCreator ? 'by NexoOmnix' : niche.brandName}
+              {niche.brandName}
             </div>
           </div>
         </Link>
@@ -183,19 +168,37 @@ export function Sidebar({ tenant, open, onClose, productMode = 'nexoomnix' }: Si
 
       {/* Bottom actions */}
       <div className="px-3 py-4 border-t border-gray-100 space-y-0.5">
-        <Link
-          href="/admin/skills"
-          className={cn(
-            'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
-            pathname.startsWith('/admin/skills')
-              ? 'bg-violet-50 text-violet-700'
-              : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-          )}
-        >
-          <FlaskConical className="w-4 h-4 flex-shrink-0" />
-          Skills Factory
-          <span className="ml-auto text-xs bg-violet-100 text-violet-600 px-1.5 py-0.5 rounded-md font-medium">IA</span>
-        </Link>
+        {/* Admin DB8 — invisível pro cliente final */}
+        {isStaff && (
+          <>
+            <Link
+              href="/admin/skills"
+              className={cn(
+                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
+                pathname.startsWith('/admin/skills')
+                  ? 'bg-violet-50 text-violet-700'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              )}
+            >
+              <FlaskConical className="w-4 h-4 flex-shrink-0" />
+              Skills Factory
+              <span className="ml-auto text-xs bg-violet-100 text-violet-600 px-1.5 py-0.5 rounded-md font-medium">ADMIN</span>
+            </Link>
+            <Link
+              href="/admin/bugs"
+              className={cn(
+                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
+                pathname.startsWith('/admin/bugs')
+                  ? 'bg-red-50 text-red-700'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              )}
+            >
+              <Bug className="w-4 h-4 flex-shrink-0" />
+              Bug Reports
+              <span className="ml-auto text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded-md font-medium">ADMIN</span>
+            </Link>
+          </>
+        )}
         <Link
           href="/assinatura"
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-all"

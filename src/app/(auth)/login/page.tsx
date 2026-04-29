@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Zap, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { SocialLoginButtons } from '@/components/auth/SocialLoginButtons'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -117,6 +118,8 @@ export default function LoginPage() {
               {loading ? 'Entrando...' : 'Entrar'}
             </button>
           </form>
+
+          <SocialLoginButtons />
         </div>
 
         <p className="text-center text-sm text-gray-500 mt-6">

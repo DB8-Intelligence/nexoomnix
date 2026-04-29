@@ -3,16 +3,18 @@
 import { useState, useEffect } from 'react'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
+import { BugCatcher } from '@/components/debug/BugCatcher'
+import { DashboardErrorBoundary } from '@/components/debug/DashboardErrorBoundary'
 import type { Tenant, Profile } from '@/types/database'
 
 interface DashboardShellProps {
   tenant: Tenant
   profile: Profile
-  productMode?: string
+  isStaff?: boolean
   children: React.ReactNode
 }
 
-export function DashboardShell({ tenant, profile, productMode = 'nexoomnix', children }: DashboardShellProps) {
+export function DashboardShell({ tenant, profile, isStaff = false, children }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // Aplica o nicho como data attribute no html para trocar as CSS vars
@@ -30,7 +32,7 @@ export function DashboardShell({ tenant, profile, productMode = 'nexoomnix', chi
         tenant={tenant}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        productMode={productMode}
+        isStaff={isStaff}
       />
 
       {/* Main content */}
@@ -41,7 +43,9 @@ export function DashboardShell({ tenant, profile, productMode = 'nexoomnix', chi
           onMenuClick={() => setSidebarOpen(true)}
         />
         <main className="flex-1 p-4 md:p-6 lg:p-8 animate-fade-in">
-          {children}
+          <DashboardErrorBoundary>
+            {children}
+          </DashboardErrorBoundary>
         </main>
       </div>
 
@@ -52,6 +56,9 @@ export function DashboardShell({ tenant, profile, productMode = 'nexoomnix', chi
           onClick={() => setSidebarOpen(false)}
         />
       )}
+
+      {/* Bug-catcher — visível apenas pra staff DB8 */}
+      <BugCatcher enabled={isStaff} />
     </div>
   )
 }

@@ -5,7 +5,6 @@ const NICHES = [
   { slug: 'beleza',      name: 'Salão & Barbearia',    href: '/salaopro',    emoji: '💇' },
   { slug: 'saude',       name: 'Clínica & Saúde',       href: '/clinicapro',  emoji: '🏥' },
   { slug: 'tecnico',     name: 'Serviços Técnicos',     href: '/ordemdeservico', emoji: '🔧' },
-  { slug: 'imoveis',     name: 'Imobiliária',           href: '/imobpro',     emoji: '🏠' },
   { slug: 'juridico',    name: 'Advocacia',             href: '/juridicpro',  emoji: '⚖️' },
   { slug: 'pet',         name: 'Pet Shop & Vet',        href: '/petpro',      emoji: '🐾' },
   { slug: 'educacao',    name: 'Escola & Cursos',       href: '/educapro',    emoji: '🎓' },
@@ -20,7 +19,6 @@ const NICHES = [
 const FEATURES = [
   'Omnix Agenda — agendamentos online',
   'Omnix CRM — gestão de clientes',
-  'Omnix Reels — reels virais com IA',
   'Omnix Social — posts automáticos',
   'Omnix Sites — site público do negócio',
   'Financeiro e fluxo de caixa',
@@ -70,7 +68,7 @@ export function NexoOmnixLanding() {
           <span className="text-blue-600">o marketing do seu negócio</span>
         </h1>
         <p className="text-lg text-gray-500 mb-8 max-w-xl mx-auto">
-          Plataforma completa para criar reels virais, publicar nas redes sociais,
+          Plataforma completa para publicar nas redes sociais,
           gerenciar clientes e crescer online — tudo num só lugar.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
